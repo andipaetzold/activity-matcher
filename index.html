@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Route Matcher</title>
+
+    <script src='https://api.mapbox.com/mapbox-gl-js/v0.40.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v0.40.0/mapbox-gl.css' rel='stylesheet' />
+    <script rel="stylesheet" src="vendor/polyline.js"></script>
+    <script rel="stylesheet" src="script.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+</head>
+<body style="margin: 0; padding: 0; height: 100vh">
+    <main class="container" id="auth">
+        <div class="jumbotron text-center">
+            <h1 id="title">Activity Matcher</h1>
+            <a class="btn btn-primary btn-lg" href="https://www.strava.com/oauth/authorize?client_id=21035&amp;response_type=code&amp;redirect_uri=http://andipaetzold.github.com/activity-matcher/&amp;approval_prompt=force">
+                Authorize
+            </a>
+        </div>
+    </main>
+
+    <div class="row" style="margin: 0">
+        <div id="map" style="height: 100vh; width: 70vw"></div>
+
+        <div style=" overflow: scroll; height: 100vh; width: 30vw">
+            <ul id="activity-list" class="list-group"></ul>
+        </div>
+    </div>
+</body>
+</html>
