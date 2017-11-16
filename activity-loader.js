@@ -1,12 +1,18 @@
+import { SimilarityCalculator } from "./similarity-calculator.js";
+
 export class ActivityLoader {
     constructor(map) {
         this.map = map;
+        this.similarityCalculator = new SimilarityCalculator(map);
     }
 
     async loadActivities(accessToken) {
         const ACTIVITIES_URI = `https://www.strava.com/api/v3/athlete/activities?access_token=${accessToken}`
         const activities = await fetch(ACTIVITIES_URI).then(response => response.json());
-        activities.forEach(activity => this.loadActivity(activity));
+
+        for (let activity of activities) {
+            this.loadActivity(activity);
+        }
     }
 
     loadActivity(activity) {
@@ -17,14 +23,7 @@ export class ActivityLoader {
             "type": "line",
             "source": {
                 "type": "geojson",
-                "data": {
-                    "type": "Feature",
-                    "properties": {},
-                    "geometry": {
-                        "type": "LineString",
-                        "coordinates": coordinates
-                    }
-                }
+                "data": turf.lineString(coordinates),
             },
             "layout": {
                 "line-join": "round",
@@ -32,8 +31,7 @@ export class ActivityLoader {
                 "visibility": "none"
             },
             "paint": {
-                "line-color": "red",
-                "line-width": 3
+                "line-color": "black",
             }
         });
 
@@ -50,7 +48,7 @@ export class ActivityLoader {
 
         const cellType = document.createElement('td');
         cellType.innerText = activity.type;
-
+        
         const cellCommute = document.createElement('td');
         cellCommute.innerText = activity.commute ? 'Yes' : 'No';
       
@@ -63,12 +61,12 @@ export class ActivityLoader {
             if (buttonDisplay.classList.contains('btn-primary')) {
                 buttonDisplay.classList.remove('btn-primary');
                 this.map.setLayoutProperty(`activity-${activity.id}`, 'visibility', 'none');
-                this.fitToBounds();
             } else {
                 buttonDisplay.classList.add('btn-primary');
                 this.map.setLayoutProperty(`activity-${activity.id}`, 'visibility', 'visible');
-                this.fitToBounds();
             }
+            this.fitToBounds();
+            this.displaySimilarities();
         });
         cellDisplay.appendChild(buttonDisplay);
 
@@ -81,20 +79,23 @@ export class ActivityLoader {
 
         document.getElementById('activity-table').appendChild(row);
     }
-    
 
-    fitToBounds() {
-        const layerIds = this.map.getStyle().layers
+    getVisibleActivities() {
+        return this.map.getStyle().layers
             .filter(layer => layer.id.startsWith('activity-'))
             .filter(layer => layer.layout.visibility == 'visible')
             .map(layer => layer.id);
+    }
 
-        if (layerIds.length == 0) {
+    fitToBounds() {
+        const activityIds = this.getVisibleActivities();
+
+        if (activityIds.length == 0) {
             return;
         }
 
         const coordinates = [];
-        for (let id of layerIds) {
+        for (let id of activityIds) {
             coordinates.push(...this.map.getSource(id)._data.geometry.coordinates);
         }
 
@@ -102,5 +103,11 @@ export class ActivityLoader {
         this.map.fitBounds(bounds, {
             padding: 20
         });
+    }
+
+    displaySimilarities() {
+        const activityIds = this.getVisibleActivities();
+        const coordinates = activityIds.map(id => this.map.getSource(id)._data.geometry.coordinates);
+        this.similarityCalculator.drawSimilarLines(coordinates);
     }
 }
