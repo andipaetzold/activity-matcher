@@ -4,6 +4,8 @@ export class ActivityLoader {
     constructor(map) {
         this.map = map;
         this.similarityCalculator = new SimilarityCalculator(map);
+
+        this.coordinateMap = new Map();
     }
 
     async loadActivities(accessToken) {
@@ -14,12 +16,10 @@ export class ActivityLoader {
             this.loadActivity(activity);
         }
     }
-
-    loadActivity(activity) {
-        const coordinates = polyline.decode(activity.map.summary_polyline).map(coord => [coord[1], coord[0]]);
-
+   
+    addLayer(id, coordinates) {
         this.map.addLayer({
-            "id": `activity-${activity.id}`,
+            "id": `activity-${id}`,
             "type": "line",
             "source": {
                 "type": "geojson",
@@ -34,6 +34,21 @@ export class ActivityLoader {
                 "line-color": "black",
             }
         });
+    }
+
+    showLayer(id) {
+        this.map.setLayoutProperty(`activity-${id}`, 'visibility', 'visible');
+    }
+
+    hideLayer(id) {
+        this.map.setLayoutProperty(`activity-${id}`, 'visibility', 'none');
+    }
+
+    loadActivity(activity) {
+        const coordinates = polyline.decode(activity.map.summary_polyline).map(coord => [coord[1], coord[0]]);
+        
+        this.coordinateMap.set(activity.id, coordinates);
+        this.addLayer(activity.id, coordinates);
 
         const row = document.createElement('tr');
         
@@ -60,10 +75,10 @@ export class ActivityLoader {
         buttonDisplay.addEventListener('click', () => {
             if (buttonDisplay.classList.contains('btn-primary')) {
                 buttonDisplay.classList.remove('btn-primary');
-                this.map.setLayoutProperty(`activity-${activity.id}`, 'visibility', 'none');
+                this.hideLayer(activity.id);
             } else {
                 buttonDisplay.classList.add('btn-primary');
-                this.map.setLayoutProperty(`activity-${activity.id}`, 'visibility', 'visible');
+                this.showLayer(activity.id);
             }
             this.fitToBounds();
             this.displaySimilarities();
@@ -84,7 +99,9 @@ export class ActivityLoader {
         return this.map.getStyle().layers
             .filter(layer => layer.id.startsWith('activity-'))
             .filter(layer => layer.layout.visibility == 'visible')
-            .map(layer => layer.id);
+            .map(layer => layer.id)
+            .map(id => id.substr('activity-'.length))
+            .map(id => parseInt(id));
     }
 
     fitToBounds() {
@@ -96,7 +113,7 @@ export class ActivityLoader {
 
         const coordinates = [];
         for (let id of activityIds) {
-            coordinates.push(...this.map.getSource(id)._data.geometry.coordinates);
+            coordinates.push(...this.map.getSource(`activity-${id}`)._data.geometry.coordinates);
         }
 
         const bounds = coordinates.reduce((bounds, coord) => bounds.extend(coord), new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
@@ -107,7 +124,7 @@ export class ActivityLoader {
 
     displaySimilarities() {
         const activityIds = this.getVisibleActivities();
-        const coordinates = activityIds.map(id => this.map.getSource(id)._data.geometry.coordinates);
+        const coordinates = activityIds.map(id => this.coordinateMap.get(id));
         this.similarityCalculator.drawSimilarLines(coordinates);
     }
 }
