@@ -12,8 +12,9 @@ export class ActivityLoader {
 
     async loadActivities(accessToken) {
         const ACTIVITIES_URI = `https://www.strava.com/api/v3/athlete/activities?access_token=${accessToken}`
-        const activities = await fetch(ACTIVITIES_URI).then(response => response.json());
-
+        let activities = await fetch(ACTIVITIES_URI).then(response => response.json());
+        activities = activities.filter(activity => !!activity.map.summary_polyline);
+        
         for (let activity of activities) {
             this.loadActivity(activity);
         }
