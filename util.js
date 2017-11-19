@@ -14,7 +14,25 @@ export function randomID() {
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   
     for (var i = 0; i < 5; i++)
-      text += possible.charAt(Math.floor(Math.random() * possible.length));
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
   
     return text;
-  }
+}
+
+export function splitLine(coordinates, distance) {
+    const lineString = turf.lineString(coordinates);
+    const chunkedLine = turf.lineChunk(lineString, distance);
+    
+    const newCoordinates = [];
+    for (let feature of chunkedLine.features) {
+        const coords = turf.getCoords(feature);
+
+        if (newCoordinates.length == 0) {
+            newCoordinates.push(...coords);
+        } else {
+            newCoordinates.push(...coords.slice(1));
+        }
+    }
+    
+    return newCoordinates;
+}

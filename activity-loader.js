@@ -1,9 +1,11 @@
 import { SimilarityCalculator } from "./similarity-calculator.js";
+import { LapCalculator } from "./lap-calculator.js";
 
 export class ActivityLoader {
     constructor(map) {
         this.map = map;
         this.similarityCalculator = new SimilarityCalculator(map);
+        this.lapCalculator = new LapCalculator(map);
 
         this.coordinateMap = new Map();
     }
@@ -81,7 +83,7 @@ export class ActivityLoader {
                 this.showLayer(activity.id);
             }
             this.fitToBounds();
-            this.displaySimilarities();
+            this.displayCalculations();
         });
         cellDisplay.appendChild(buttonDisplay);
 
@@ -122,9 +124,14 @@ export class ActivityLoader {
         });
     }
 
-    displaySimilarities() {
+    displayCalculations() {
         const activityIds = this.getVisibleActivities();
-        const coordinates = activityIds.map(id => this.coordinateMap.get(id));
-        this.similarityCalculator.drawSimilarLines(coordinates);
+        const routes = activityIds.map(id => this.coordinateMap.get(id));
+
+        this.similarityCalculator.drawSimilarLines(routes);
+
+        for (let coordinates of routes) {
+            this.lapCalculator.showLap(coordinates);
+        }
     }
 }
