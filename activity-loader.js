@@ -1,16 +1,17 @@
 import { SimilarityCalculator } from "./similarity-calculator.js";
 import { LapCalculator } from "./lap-calculator.js";
 import { initFirebaseDatabase } from "./firebase.js";
+import { fitToBounds, clearMap, addLineLayer } from "./map.js";
 
 export class ActivityLoader {
-    constructor(map) {
+    constructor() {
         this.database = initFirebaseDatabase();
 
-        this.map = map;
-        this.similarityCalculator = new SimilarityCalculator(map);
-        this.lapCalculator = new LapCalculator(map);
+        this.similarityCalculator = new SimilarityCalculator();
+        this.lapCalculator = new LapCalculator();
 
         this.coordinateMap = new Map();
+        this.visibleActivities = [];
     }
 
     async loadActivities(token) {
@@ -45,38 +46,9 @@ export class ActivityLoader {
             });
     }
 
-    addLayer(id, coordinates) {
-        this.map.addLayer({
-            "id": `activity-${id}`,
-            "type": "line",
-            "source": {
-                "type": "geojson",
-                "data": turf.lineString(coordinates),
-            },
-            "layout": {
-                "line-join": "round",
-                "line-cap": "round",
-                "visibility": "none"
-            },
-            "paint": {
-                "line-color": "black",
-            }
-        });
-    }
-
-    showLayer(id) {
-        this.map.setLayoutProperty(`activity-${id}`, 'visibility', 'visible');
-    }
-
-    hideLayer(id) {
-        this.map.setLayoutProperty(`activity-${id}`, 'visibility', 'none');
-    }
-
     loadActivity(activity) {
         const coordinates = polyline.decode(activity.map.polyline).map(coord => [coord[1], coord[0]]);
-
         this.coordinateMap.set(activity.id, coordinates);
-        this.addLayer(activity.id, coordinates);
 
         const row = document.createElement('tr');
 
@@ -103,13 +75,16 @@ export class ActivityLoader {
         buttonDisplay.addEventListener('click', () => {
             if (buttonDisplay.classList.contains('btn-primary')) {
                 buttonDisplay.classList.remove('btn-primary');
-                this.hideLayer(activity.id);
+                this.visibleActivities.splice(this.visibleActivities.indexOf(activity.id), 1);
             } else {
                 buttonDisplay.classList.add('btn-primary');
-                this.showLayer(activity.id);
+                this.visibleActivities.push(activity.id);
             }
-            this.fitToBounds();
+
+            clearMap();
+            this.displayActivities();
             this.displayCalculations();
+            fitToBounds();
         });
         cellDisplay.appendChild(buttonDisplay);
 
@@ -123,41 +98,20 @@ export class ActivityLoader {
         document.getElementById('activity-table').prepend(row);
     }
 
-    getVisibleActivities() {
-        return this.map.getStyle().layers
-            .filter(layer => layer.id.startsWith('activity-'))
-            .filter(layer => layer.layout.visibility == 'visible')
-            .map(layer => layer.id)
-            .map(id => id.substr('activity-'.length))
-            .map(id => parseInt(id));
-    }
-
-    fitToBounds() {
-        const activityIds = this.getVisibleActivities();
-
-        if (activityIds.length == 0) {
-            return;
-        }
-
-        const coordinates = [];
-        for (let id of activityIds) {
-            coordinates.push(...this.map.getSource(`activity-${id}`)._data.geometry.coordinates);
-        }
-
-        const bounds = coordinates.reduce((bounds, coord) => bounds.extend(coord), new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-        this.map.fitBounds(bounds, {
-            padding: 20
-        });
-    }
-
     displayCalculations() {
-        const activityIds = this.getVisibleActivities();
-        const routes = activityIds.map(id => this.coordinateMap.get(id));
+        const routes = this.visibleActivities.map(id => this.coordinateMap.get(id));
 
         this.similarityCalculator.drawSimilarLines(routes);
 
+        /*
         for (let coordinates of routes) {
             this.lapCalculator.showLap(coordinates);
+        }*/
+    }
+
+    displayActivities() {
+        for (let activity of this.visibleActivities) {
+            addLineLayer(this.coordinateMap.get(activity), 'black');
         }
     }
 }
