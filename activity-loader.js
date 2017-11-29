@@ -1,8 +1,11 @@
 import { SimilarityCalculator } from "./similarity-calculator.js";
 import { LapCalculator } from "./lap-calculator.js";
+import { initFirebaseDatabase } from "./firebase.js";
 
 export class ActivityLoader {
     constructor(map) {
+        this.database = initFirebaseDatabase();
+
         this.map = map;
         this.similarityCalculator = new SimilarityCalculator(map);
         this.lapCalculator = new LapCalculator(map);
@@ -10,16 +13,38 @@ export class ActivityLoader {
         this.coordinateMap = new Map();
     }
 
-    async loadActivities(accessToken) {
-        const ACTIVITIES_URI = `https://www.strava.com/api/v3/athlete/activities?access_token=${accessToken}`
+    async loadActivities(token) {
+        const ACTIVITIES_URI = `https://www.strava.com/api/v3/athlete/activities?access_token=${token.access_token}`;
         let activities = await fetch(ACTIVITIES_URI).then(response => response.json());
         activities = activities.filter(activity => !!activity.map.summary_polyline);
-        
+
+        this.database.ref(`/${token.athlete.id}`)
+            .orderByChild('start_date')
+            .on('child_added', snapshot => {
+                this.loadActivity(snapshot.val());
+            });
+
         for (let activity of activities) {
-            this.loadActivity(activity);
+            await this.loadToFirebase(token, activity);
         }
     }
-   
+
+    async loadToFirebase(token, activity) {
+        this.database
+            .ref(`/${token.athlete.id}/${activity.id}`)
+            .once('value')
+            .then(async snapshot => {
+                if (!snapshot.val()) {
+                    const ACTIVITY_URI = `https://www.strava.com/api/v3/activities/${activity.id}?access_token=${token.access_token}`;
+                    activity = await fetch(ACTIVITY_URI).then(response => response.json());
+
+                    this.database
+                        .ref(`/${token.athlete.id}/${activity.id}`)
+                        .set(activity);
+                }
+            });
+    }
+
     addLayer(id, coordinates) {
         this.map.addLayer({
             "id": `activity-${id}`,
@@ -48,28 +73,28 @@ export class ActivityLoader {
     }
 
     loadActivity(activity) {
-        const coordinates = polyline.decode(activity.map.summary_polyline).map(coord => [coord[1], coord[0]]);
-        
+        const coordinates = polyline.decode(activity.map.polyline).map(coord => [coord[1], coord[0]]);
+
         this.coordinateMap.set(activity.id, coordinates);
         this.addLayer(activity.id, coordinates);
 
         const row = document.createElement('tr');
-        
+
         const cellDate = document.createElement('td');
         cellDate.innerText = new Date(activity.start_date).toLocaleDateString();
-                
+
         const cellDistance = document.createElement('td');
         cellDistance.innerText = `${Math.floor(activity.distance / 1000)}km`;
-        
+
         const cellDuration = document.createElement('td');
         cellDuration.innerText = `${Math.floor(activity.elapsed_time / 60)}min`;
 
         const cellType = document.createElement('td');
         cellType.innerText = activity.type;
-        
+
         const cellCommute = document.createElement('td');
         cellCommute.innerText = activity.commute ? 'Yes' : 'No';
-      
+
         const cellDisplay = document.createElement('td');
         const buttonDisplay = document.createElement('button');
         buttonDisplay.innerText = "Display";
@@ -95,7 +120,7 @@ export class ActivityLoader {
         row.appendChild(cellCommute);
         row.appendChild(cellDisplay);
 
-        document.getElementById('activity-table').appendChild(row);
+        document.getElementById('activity-table').prepend(row);
     }
 
     getVisibleActivities() {
