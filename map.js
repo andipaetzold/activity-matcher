@@ -18,10 +18,15 @@ export function clearMap() {
     layers = [];
 }
 
-export function addLineLayer(coordinates, color, width) {
+function addLayer(layer) {
     layers.push(id);
-    map.addLayer({
-        "id": `layer-${id}`,
+    layer.id = `layer-${id}`;
+    map.addLayer(layer);
+    ++id;
+}
+
+export function addLineLayer(coordinates, color, width) {
+    addLayer({
         "type": "line",
         "source": {
             "type": "geojson",
@@ -36,13 +41,10 @@ export function addLineLayer(coordinates, color, width) {
             "line-width": width | 1
         }
     });
-    ++id;
 }
 
 export function addMultipleLineLayer(coordinates, color, width) {
-    layers.push(id);
-    map.addLayer({
-        "id": `layer-${id}`,
+    addLayer({
         "type": "line",
         "source": {
             "type": "geojson",
@@ -57,13 +59,10 @@ export function addMultipleLineLayer(coordinates, color, width) {
             "line-width": width | 1
         }
     });
-    ++id;
 }
 
 export function addPointLayer(coordinates, color, radius) {
-    layers.push(id);
-    map.addLayer({
-        "id": `layer-${id}`,
+    addLayer({
         "type": "circle",
         "source": {
             "type": "geojson",
@@ -74,7 +73,6 @@ export function addPointLayer(coordinates, color, radius) {
             "circle-radius": radius | 5
         }
     });
-    ++id;
 }
 
 export function fitToBounds() {
