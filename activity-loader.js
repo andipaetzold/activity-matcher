@@ -1,7 +1,7 @@
 import { SimilarityCalculator } from "./similarity-calculator.js";
 import { LapCalculator } from "./lap-calculator.js";
 import { initFirebaseDatabase } from "./firebase.js";
-import { fitToBounds, clearMap, addLineLayer } from "./map.js";
+import { fitToBounds, clearMap, addLineLayer, addPointLayer } from "./map.js";
 
 export class ActivityLoader {
     constructor() {
@@ -111,7 +111,10 @@ export class ActivityLoader {
 
     displayActivities() {
         for (let activity of this.visibleActivities) {
-            addLineLayer(this.coordinateMap.get(activity), 'black');
+            const coordinates = this.coordinateMap.get(activity);
+            addLineLayer(coordinates, 'black');
+            addPointLayer(coordinates[0], 'red');
+            addPointLayer(coordinates[coordinates.length - 1], 'green');
         }
     }
 }

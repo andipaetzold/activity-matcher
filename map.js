@@ -39,6 +39,23 @@ export function addLineLayer(coordinates, color, width) {
     ++id;
 }
 
+export function addPointLayer(coordinates, color, radius) {
+    layers.push(id);
+    map.addLayer({
+        "id": `layer-${id}`,
+        "type": "circle",
+        "source": {
+            "type": "geojson",
+            "data": turf.point(coordinates),
+        },
+        "paint": {
+            "circle-color": color,
+            "circle-radius": radius | 5
+        }
+    });
+    ++id;
+}
+
 export function fitToBounds() {
     if (layers.length == 0) {
         return;
