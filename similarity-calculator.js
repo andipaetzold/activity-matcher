@@ -1,6 +1,6 @@
 import { addLineLayer } from "./map.js";
 
-export const maxDistanceForSimilarity = 0.050;
+export const maxDistanceForSimilarity = 0.025;
 
 export class SimilarityCalculator {
     addLine(p1, p2) {
@@ -29,7 +29,6 @@ export class SimilarityCalculator {
 
         const usedRoute2 = new Set();
 
-        let currentLine = [];
         for (let i1 = 0; i1 < route1.length; ++i1) {
             let p1 = route1[i1];
 
@@ -41,22 +40,23 @@ export class SimilarityCalculator {
                 let ii2 = i2;
 
                 while (p1 && p2 && !usedRoute2.has(ii2) && turf.distance(p1, p2) <= maxDistanceForSimilarity) {
-                    usedRoute2.add(ii2);
-                    currentLine.push(turf.midpoint(p1, p2).geometry.coordinates);
-
-                    ++ii1;
-                    ++ii2;
-
-                    p1 = route1[ii1];
-                    p2 = route2[ii2];
+                    p1 = route1[++ii1];
+                    p2 = route2[++ii2];
                 }
 
-                if (currentLine.length >= 2) {
+                if (ii1 - i1 >= 2) {
+                    let currentLine = [];
+
+                    let i = 0;
+                    while (i1 + i < ii1 && i2 + i < ii2) {
+                        currentLine.push(turf.midpoint(route1[i1 + i], route2[i2 + i]).geometry.coordinates);
+                        usedRoute2.add(i2 + i);
+                        ++i;
+                    }
+
                     addLineLayer(currentLine, 'blue', 3);
+                    break route2Label;
                 }
-                currentLine = [];
-
-                break route2Label;
             }
         }
     }
