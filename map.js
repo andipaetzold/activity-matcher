@@ -39,6 +39,27 @@ export function addLineLayer(coordinates, color, width) {
     ++id;
 }
 
+export function addMultipleLineLayer(coordinates, color, width) {
+    layers.push(id);
+    map.addLayer({
+        "id": `layer-${id}`,
+        "type": "line",
+        "source": {
+            "type": "geojson",
+            "data": turf.featureCollection(coordinates.map(route => turf.lineString(route))),
+        },
+        "layout": {
+            "line-join": "round",
+            "line-cap": "round"
+        },
+        "paint": {
+            "line-color": color,
+            "line-width": width | 1
+        }
+    });
+    ++id;
+}
+
 export function addPointLayer(coordinates, color, radius) {
     layers.push(id);
     map.addLayer({
@@ -63,7 +84,14 @@ export function fitToBounds() {
 
     const coordinates = [];
     for (let id of layers) {
-        coordinates.push(...map.getSource(`layer-${id}`)._data.geometry.coordinates);
+        const data = map.getSource(`layer-${id}`)._data;
+        if (data.type == 'Feature') {
+            coordinates.push(...data.geometry.coordinates);
+        } else {
+            for (let feature of data.features) {
+                coordinates.push(...feature.geometry.coordinates);
+            }
+        }
     }
 
     const bounds = coordinates.reduce((bounds, coord) => bounds.extend(coord), new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));

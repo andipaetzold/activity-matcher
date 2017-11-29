@@ -1,4 +1,4 @@
-import { addLineLayer } from "./map.js";
+import { addMultipleLineLayer } from "./map.js";
 
 export const maxDistanceForSimilarity = 0.025;
 
@@ -29,6 +29,7 @@ export class SimilarityCalculator {
 
         const usedRoute2 = new Set();
 
+        let lines = [];
         for (let i1 = 0; i1 < route1.length; ++i1) {
             let p1 = route1[i1];
 
@@ -54,10 +55,11 @@ export class SimilarityCalculator {
                         ++i;
                     }
 
-                    addLineLayer(currentLine, 'blue', 3);
+                    lines.push(currentLine);
                     break route2Label;
                 }
             }
         }
+        addMultipleLineLayer(lines, 'blue', 3);
     }
 }
