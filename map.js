@@ -96,6 +96,6 @@ export function fitToBounds() {
 
     const bounds = coordinates.reduce((bounds, coord) => bounds.extend(coord), new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
     map.fitBounds(bounds, {
-        padding: 20
+        padding: 50
     });
 }
