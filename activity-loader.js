@@ -212,7 +212,7 @@ export class ActivityLoader {
             const coordinates = await this.loadCoordinates(activity);
 
             addLineLayer(coordinates, 'black', 1);
-            addPointLayer(coordinates[0], 'red');
+            addPointLayer(coordinates[0], 'green');
             addPointLayer(coordinates[coordinates.length - 1], 'red');
 
         }
