@@ -1,6 +1,6 @@
 import { SimilarityCalculator, maxDistanceForSimilarity } from "./similarity-calculator.js";
 import { LapCalculator } from "./lap-calculator.js";
-import { initFirebaseDatabase } from "./firebase.js";
+import { initFirebaseDatabase, nodeExists } from "./firebase.js";
 import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map.js";
 import { getRandomColor } from "./util.js";
 
@@ -20,10 +20,10 @@ export class ActivityLoader {
         let activities = await fetch(ACTIVITIES_URI).then(response => response.json());
         activities = activities.filter(activity => !!activity.map.summary_polyline);
 
-        this.database.ref(`/${token.athlete.id}`)
-            .orderByChild('start_date')
+        this.database.ref(`/${token.athlete.id}/`)
+            .orderByChild('activity/start_date')
             .on('child_added', snapshot => {
-                this.loadActivity(snapshot.val());
+                this.loadActivity(snapshot.val().activity);
             });
 
         for (let activity of activities) {
@@ -32,22 +32,71 @@ export class ActivityLoader {
     }
 
     async loadToFirebase(token, activity) {
-        this.database
-            .ref(`/${token.athlete.id}/${activity.id}`)
-            .once('value')
-            .then(async snapshot => {
-                if (!snapshot.val()) {
-                    const ACTIVITY_URI = `https://www.strava.com/api/v3/activities/${activity.id}?access_token=${token.access_token}`;
-                    activity = await fetch(ACTIVITY_URI).then(response => response.json());
+        const path = `/${token.athlete.id}/${activity.id}/activity`;
+        const exists = await nodeExists(this.database, path);
+        if (!exists) {
+            const ACTIVITY_URI = `https://www.strava.com/api/v3/activities/${activity.id}?access_token=${token.access_token}`;
+            activity = await fetch(ACTIVITY_URI).then(response => response.json());
+            this.database.ref(path).set(activity);
 
-                    this.database
-                        .ref(`/${token.athlete.id}/${activity.id}`)
-                        .set(activity);
-                }
-            });
+        }
+    }
+
+    async loadAltitude(token, activity) {
+        const path = `/${token.athlete.id}/${activity.id}/altitude`;
+        const exists = await nodeExists(this.database, path);
+        if (!exists) {
+            const ALTITUDE_URI = `https://www.strava.com/api/v3/activities/${activity}/streams?key=altitude&key_by_type=true&access_token=${token.access_token}`;
+            const altitude = await fetch(ALTITUDE_URI).then(response => response.json());
+            this.database.ref(path).set(altitude);
+        }
+    }
+
+    async loadVelocity(token, activity) {
+        const path = `/${token.athlete.id}/${activity.id}/velocity`;
+        const exists = await nodeExists(this.database, path);
+        if (!exists) {
+            const VELOCITY_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams?key=velocity&key_by_type=true&access_token=${token.access_token}`;
+            const velocity = await fetch(VELOCITY_URI).then(response => response.json());
+            this.database.ref(path).set(velocity);
+        }
+    }
+
+    async loadHeartrate(token, activity) {
+        const path = `/${token.athlete.id}/${activity.id}/heartrate`;
+        const exists = await nodeExists(this.database, path);
+        if (!exists) {
+            const HEARTRATE_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams?key=heartrate&key_by_type=true&access_token=${token.access_token}`;
+            const heartrate = await fetch(HEARTRATE_URI).then(response => response.json());
+            this.database.ref(path).set(heartrate);
+        }
+    }
+
+    async loadTime(token, activity) {
+        const path = `/${token.athlete.id}/${activity.id}/time`;
+        const exists = await nodeExists(this.database, path);
+        if (!exists) {
+            const TIME_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams?key=time&key_by_type=true&access_token=${token.access_token}`;
+            const time = await fetch(TIME_URI).then(response => response.json());
+            this.database.ref(path).set(time);
+        }
+    }
+
+    async loadLatlng(token, activity) {
+        const path = `/${token.athlete.id}/${activity.id}/latlng`;
+        const exists = await nodeExists(this.database, path);
+        if (!exists) {
+            const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams?key=latlng&key_by_type=true&access_token=${token.access_token}`;
+            const latlng = await fetch(LATLNG_URI).then(response => response.json());
+            this.database.ref(path).set(latlng);
+        }
     }
 
     loadActivity(activity) {
+        if (!activity) {
+            return;
+        }
+
         const coordinates = polyline.decode(activity.map.polyline).map(coord => [coord[1], coord[0]]);
         this.coordinateMap.set(activity.id, coordinates);
 
@@ -73,7 +122,7 @@ export class ActivityLoader {
         buttonDisplay.innerText = "Display";
         buttonDisplay.type = "button";
         buttonDisplay.classList.add('btn');
-        buttonDisplay.addEventListener('click', () => {
+        buttonDisplay.addEventListener('click', async () => {
             if (buttonDisplay.classList.contains('btn-primary')) {
                 buttonDisplay.classList.remove('btn-primary');
                 this.visibleActivities.splice(this.visibleActivities.indexOf(activity.id), 1);
