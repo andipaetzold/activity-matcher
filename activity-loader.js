@@ -65,9 +65,10 @@ export class ActivityLoader {
             return await getNodeValue(this.database, path);
         } catch (error) {
             const ALTITUDE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/altitude?access_token=${this.token.access_token}`;
-            const altitude = await fetch(ALTITUDE_URI).then(response => response.json());
-            await this.database.ref(path).set(altitude[0].data);
-            return altitude[0].data;
+            let altitude = await fetch(ALTITUDE_URI).then(response => response.json());
+            altitude = altitude.find(e => e.type == 'altitude').data;
+            await this.database.ref(path).set(altitudealtitude);
+            return altitude;
         }
     }
 
@@ -78,9 +79,10 @@ export class ActivityLoader {
             return await getNodeValue(this.database, path);
         } catch (error) {
             const VELOCITY_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/velocity_smooth?access_token=${this.token.access_token}`;
-            const velocity = await fetch(VELOCITY_URI).then(response => response.json());
-            await this.database.ref(path).set(velocity[0].data);
-            return velocity[0].data;
+            let velocity = await fetch(VELOCITY_URI).then(response => response.json());
+            velocity = velocity.find(e => e.type == 'velocity_smooth').data;
+            await this.database.ref(path).set(velocity);
+            return velocity;
         }
     }
 
@@ -91,9 +93,10 @@ export class ActivityLoader {
             return await getNodeValue(this.database, path);
         } catch (error) {
             const HEARTRATE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/heartrate?access_token=${this.token.access_token}`;
-            const heartrate = await fetch(HEARTRATE_URI).then(response => response.json());
-            await this.database.ref(path).set(heartrate[0].data);
-            return heartrate[0].data;
+            let heartrate = await fetch(HEARTRATE_URI).then(response => response.json());
+            heartrate = heartrate.find(e => e.type == 'heartrate').data;
+            await this.database.ref(path).set(heartrate);
+            return heartrate;
         }
     }
 
@@ -104,9 +107,10 @@ export class ActivityLoader {
             return await getNodeValue(this.database, path);
         } catch (error) {
             const TIME_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/time?access_token=${this.token.access_token}`;
-            const time = await fetch(TIME_URI).then(response => response.json());
-            await this.database.ref(path).set(time[0].data);
-            return time[0].data;
+            let time = await fetch(TIME_URI).then(response => response.json());
+            time = time.find(e => e.type == 'time').data;
+            await this.database.ref(path).set(time);
+            return time;
         }
     }
 
@@ -117,8 +121,8 @@ export class ActivityLoader {
             return await getNodeValue(this.database, path);
         } catch (error) {
             const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/latlng?access_token=${this.token.access_token}`;
-            const latlng = await fetch(LATLNG_URI).then(response => response.json());
-            const coordinates = latlng[0].data.map(coord => [coord[1], coord[0]]);
+            let coordinates = await fetch(LATLNG_URI).then(response => response.json());
+            coordinates = coordinates.find(e => e.type == 'latlng').data.map(coord => [coord[1], coord[0]]);
             await this.database.ref(path).set(coordinates);
             return coordinates;
         }
@@ -131,9 +135,10 @@ export class ActivityLoader {
             return await getNodeValue(this.database, path);
         } catch (error) {
             const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams?access_token=${this.token.access_token}`;
-            const distance = await fetch(LATLNG_URI).then(response => response.json());
-            await this.database.ref(path).set(distance[0].data);
-            return distance[0].data;
+            let distance = await fetch(LATLNG_URI).then(response => response.json());
+            distance = distance.find(e => e.type == 'distance').data;
+            await this.database.ref(path).set(distance);
+            return distance;
         }
     }
 
@@ -205,9 +210,10 @@ export class ActivityLoader {
         for (let activity of this.visibleActivities) {
             const coordinates = await this.loadCoordinates(activity);
 
-            addLineLayer(coordinates, 'black');
+            addLineLayer(coordinates, 'black', 1);
             addPointLayer(coordinates[0], 'red');
-            addPointLayer(coordinates[coordinates.length - 1], 'green');
+            addPointLayer(coordinates[coordinates.length - 1], 'red');
+
         }
     }
 

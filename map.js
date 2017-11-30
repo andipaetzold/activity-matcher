@@ -18,7 +18,7 @@ export function clearMap() {
     layers = [];
 }
 
-function addLayer(layer) {
+export function addLayer(layer) {
     layers.push(id);
     layer.id = `layer-${id}`;
     map.addLayer(layer);
