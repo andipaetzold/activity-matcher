@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loader.loadActivities();
 
         document.getElementById('options-circles-around-points').addEventListener('change', () => loader.updateMap());
-        document.getElementById('options-distance-similarity').addEventListener('change', () => loader.updateMap());
+        document.getElementById('options-distance-similarity').addEventListener('input', () => loader.updateMap());
     } else {
         document.getElementById('options').style.display = 'none';
     }
