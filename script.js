@@ -9,16 +9,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     initMap();
 
     if (getAuthCode()) {
-        document.getElementById('auth').parentNode.removeChild(document.getElementById('auth'));
+        document.getElementById('activities-toggle').addEventListener('click', () => toggleOverlay());
 
+        document.getElementById('auth').parentNode.removeChild(document.getElementById('auth'));
         const loader = new ActivityLoader();
         await loader.loadActivities(await fetchToken());
+
+        document.getElementById('circle-points-toggle').addEventListener('click', () => loader.updateMap());
+    } else {
+        document.getElementById('options').style.display = 'none';
     }
 });
 
-window.toggleOverlay = () => {
-    const overlay = document.getElementById('overlay');
-    const toggle = document.getElementById('overlay-toggle');
+function toggleOverlay() {
+    const overlay = document.getElementById('activities');
+    const toggle = document.getElementById('activities-toggle');
     if (overlay.classList.contains('visible')) {
         overlay.classList.remove('visible');
         toggle.classList.remove('btn-primary');

@@ -75,6 +75,56 @@ export function addPointLayer(coordinates, color, radius) {
     });
 }
 
+export function addCircleAroudPointsLayer(coordinates, borderColor, fillColor, radius) {
+    const data = coordinates.map(coord => turf.circle(coord, radius));
+
+    let polygon = data[0];
+    for (let i = 1; i < data.length; ++i) {
+        polygon = turf.union(polygon, data[i]);
+    }
+
+    addLayer({
+        "type": "fill",
+        "source": {
+            "type": "geojson",
+            "data": polygon,
+        },
+        "paint": {
+            "fill-color": fillColor,
+            "fill-opacity": 0.25,
+        }
+    });
+
+    addLayer({
+        "type": "line",
+        "source": {
+            "type": "geojson",
+            "data": polygon,
+        },
+        "paint": {
+            "line-color": borderColor,
+            "line-width": 1,
+        }
+    });
+}
+
+function getFeatureCoordinates(feature) {
+    switch (feature.geometry.type) {
+        case 'MultiPolygon':
+            return [].concat.apply([], feature.geometry.coordinates.map(c => c[0]));
+
+        case 'LineString':
+            return feature.geometry.coordinates;
+
+        case 'Point':
+            return [feature.geometry.coordinates];
+
+        default:
+            console.error('Unknown feature type', feature.geometry.type);
+            return [];
+    }
+}
+
 export function fitToBounds() {
     if (layers.length == 0) {
         return;
@@ -84,10 +134,10 @@ export function fitToBounds() {
     for (let id of layers) {
         const data = map.getSource(`layer-${id}`)._data;
         if (data.type == 'Feature') {
-            coordinates.push(...data.geometry.coordinates);
+            coordinates.push(...getFeatureCoordinates(data));
         } else {
             for (let feature of data.features) {
-                coordinates.push(...feature.geometry.coordinates);
+                coordinates.push(...getFeatureCoordinates(feature));
             }
         }
     }

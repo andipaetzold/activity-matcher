@@ -16,7 +16,7 @@ body {
     transform: translateY(-50%);
 }
 
-#overlay {
+#activities {
     position: absolute;
     width: 100vw;
     height: 50vh;
@@ -29,13 +29,20 @@ body {
     will-change: top;
 }
 
-#overlay.visible {
+#activities.visible {
     top: 50vh;
     transition: top 500ms;
 }
 
-#overlay-toggle {
+#options {
     position: absolute;
     top: 1vh;
     left: 1vw;
+
+    display: flex;
+    flex-direction: column;
+}
+
+#options > * {
+    margin: 5px;
 }

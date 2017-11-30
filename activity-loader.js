@@ -1,7 +1,8 @@
-import { SimilarityCalculator } from "./similarity-calculator.js";
+import { SimilarityCalculator, maxDistanceForSimilarity } from "./similarity-calculator.js";
 import { LapCalculator } from "./lap-calculator.js";
 import { initFirebaseDatabase } from "./firebase.js";
-import { fitToBounds, clearMap, addLineLayer, addPointLayer } from "./map.js";
+import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map.js";
+import { getRandomColor } from "./util.js";
 
 export class ActivityLoader {
     constructor() {
@@ -81,10 +82,7 @@ export class ActivityLoader {
                 this.visibleActivities.push(activity.id);
             }
 
-            clearMap();
-            this.displayActivities();
-            this.displayCalculations();
-            fitToBounds();
+            this.updateMap();
         });
         cellDisplay.appendChild(buttonDisplay);
 
@@ -116,5 +114,22 @@ export class ActivityLoader {
             addPointLayer(coordinates[0], 'red');
             addPointLayer(coordinates[coordinates.length - 1], 'green');
         }
+    }
+
+    displayCirclesAroundPoints() {
+        if (document.getElementById('circle-points-toggle').checked) {
+            for (let activity of this.visibleActivities) {
+                const coordinates = this.coordinateMap.get(activity);
+                addCircleAroudPointsLayer(coordinates, getRandomColor(), 'lightgreen', maxDistanceForSimilarity);
+            }
+        }
+    }
+
+    updateMap() {
+        clearMap();
+        this.displayCirclesAroundPoints();
+        this.displayActivities();
+        this.displayCalculations();
+        fitToBounds();
     }
 }
