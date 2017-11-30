@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const loader = new ActivityLoader(await fetchToken());
         await loader.loadActivities();
 
-        document.getElementById('circle-points-toggle').addEventListener('click', () => loader.updateMap());
+        document.getElementById('options-circles-around-points').addEventListener('change', () => loader.updateMap());
+        document.getElementById('options-distance-similarity').addEventListener('change', () => loader.updateMap());
     } else {
         document.getElementById('options').style.display = 'none';
     }

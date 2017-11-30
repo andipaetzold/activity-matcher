@@ -1,7 +1,5 @@
 import { addMultipleLineLayer } from "./map.js";
 
-export const maxDistanceForSimilarity = 0.025;
-
 export class SimilarityCalculator {
     addLine(p1, p2) {
     }
@@ -40,7 +38,7 @@ export class SimilarityCalculator {
                 let ii1 = i1;
                 let ii2 = i2;
 
-                while (p1 && p2 && !usedRoute2.has(ii2) && turf.distance(p1, p2) <= maxDistanceForSimilarity) {
+                while (p1 && p2 && !usedRoute2.has(ii2) && turf.distance(p1, p2) <= optionsMaxDistanceForSimilarity()) {
                     p1 = route1[++ii1];
                     p2 = route2[++ii2];
                 }

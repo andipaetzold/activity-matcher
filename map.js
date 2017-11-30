@@ -119,6 +119,13 @@ function getFeatureCoordinates(feature) {
         case 'Point':
             return [feature.geometry.coordinates];
 
+        case 'Polygon':
+            const coordinates = [];
+            for (let coords of feature.geometry.coordinates) {
+                coordinates.push(...coords);
+            }
+            return coordinates;
+
         default:
             console.error('Unknown feature type', feature.geometry.type);
             return [];

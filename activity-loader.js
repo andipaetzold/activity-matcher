@@ -1,8 +1,9 @@
-import { SimilarityCalculator, maxDistanceForSimilarity } from "./similarity-calculator.js";
+import { SimilarityCalculator } from "./similarity-calculator.js";
 import { LapCalculator } from "./lap-calculator.js";
 import { initFirebaseDatabase, getNodeValue } from "./firebase.js";
 import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map.js";
 import { getRandomColor } from "./util.js";
+import { optionsMaxDistanceForSimilarity, optionsDrawCirclesAroundPoints } from "./options.js";
 
 export class ActivityLoader {
     constructor(token) {
@@ -217,18 +218,18 @@ export class ActivityLoader {
         }
     }
 
-    displayCirclesAroundPoints() {
-        if (document.getElementById('circle-points-toggle').checked) {
+    async displayCirclesAroundPoints() {
+        if (optionsDrawCirclesAroundPoints()) {
             for (let activity of this.visibleActivities) {
-                const coordinates = this.coordinateMap.get(activity);
-                addCircleAroudPointsLayer(coordinates, getRandomColor(), 'lightgreen', maxDistanceForSimilarity);
+                const coordinates = await this.loadMap(activity);
+                addCircleAroudPointsLayer(coordinates, getRandomColor(), 'lightgreen', optionsMaxDistanceForSimilarity());
             }
         }
     }
 
     async updateMap() {
         clearMap();
-        this.displayCirclesAroundPoints();
+        await this.displayCirclesAroundPoints();
         await this.displayActivities();
         await this.displayCalculations();
         fitToBounds();
