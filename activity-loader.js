@@ -66,8 +66,8 @@ export class ActivityLoader {
         } catch (error) {
             const ALTITUDE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/altitude?access_token=${this.token.access_token}`;
             const altitude = await fetch(ALTITUDE_URI).then(response => response.json());
-            await this.database.ref(path).set(altitude);
-            return altitude;
+            await this.database.ref(path).set(altitude[0].data);
+            return altitude[0].data;
         }
     }
 
@@ -79,8 +79,8 @@ export class ActivityLoader {
         } catch (error) {
             const VELOCITY_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/velocity_smooth?access_token=${this.token.access_token}`;
             const velocity = await fetch(VELOCITY_URI).then(response => response.json());
-            await this.database.ref(path).set(velocity);
-            return velocity;
+            await this.database.ref(path).set(velocity[0].data);
+            return velocity[0].data;
         }
     }
 
@@ -92,8 +92,8 @@ export class ActivityLoader {
         } catch (error) {
             const HEARTRATE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/heartrate?access_token=${this.token.access_token}`;
             const heartrate = await fetch(HEARTRATE_URI).then(response => response.json());
-            await this.database.ref(path).set(heartrate);
-            return heartrate;
+            await this.database.ref(path).set(heartrate[0].data);
+            return heartrate[0].data;
         }
     }
 
@@ -105,8 +105,8 @@ export class ActivityLoader {
         } catch (error) {
             const TIME_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/time?access_token=${this.token.access_token}`;
             const time = await fetch(TIME_URI).then(response => response.json());
-            await this.database.ref(path).set(time);
-            return time;
+            await this.database.ref(path).set(time[0].data);
+            return time[0].data;
         }
     }
 
@@ -118,8 +118,22 @@ export class ActivityLoader {
         } catch (error) {
             const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/latlng?access_token=${this.token.access_token}`;
             const latlng = await fetch(LATLNG_URI).then(response => response.json());
-            await this.database.ref(path).set(latlng);
-            return latlng;
+            const coordinates = latlng[0].data.map(coord => [coord[1], coord[0]]);
+            await this.database.ref(path).set(coordinates);
+            return coordinates;
+        }
+    }
+
+    async loadDistance(activityId) {
+        const path = `/${this.token.athlete.id}/${activityId}/distance`;
+
+        try {
+            return await getNodeValue(this.database, path);
+        } catch (error) {
+            const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams?access_token=${this.token.access_token}`;
+            const distance = await fetch(LATLNG_URI).then(response => response.json());
+            await this.database.ref(path).set(distance[0].data);
+            return distance[0].data;
         }
     }
 
@@ -173,8 +187,11 @@ export class ActivityLoader {
         document.getElementById('activity-table').prepend(row);
     }
 
-    displayCalculations() {
-        const routes = this.visibleActivities.map(id => this.coordinateMap.get(id));
+    async displayCalculations() {
+        const routes = []
+        for (let activity of this.visibleActivities) {
+            routes.push(await this.loadCoordinates(activity));
+        }
 
         this.similarityCalculator.drawSimilarLines(routes);
 
@@ -186,7 +203,7 @@ export class ActivityLoader {
 
     async displayActivities() {
         for (let activity of this.visibleActivities) {
-            const coordinates = await this.loadMap(activity);
+            const coordinates = await this.loadCoordinates(activity);
 
             addLineLayer(coordinates, 'black');
             addPointLayer(coordinates[0], 'red');
@@ -207,7 +224,7 @@ export class ActivityLoader {
         clearMap();
         this.displayCirclesAroundPoints();
         await this.displayActivities();
-        //this.displayCalculations();
+        await this.displayCalculations();
         fitToBounds();
     }
 }
