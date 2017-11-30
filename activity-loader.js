@@ -22,7 +22,7 @@ export class ActivityLoader {
         let activities = await fetch(ACTIVITIES_URI).then(response => response.json());
         activities = activities.filter(activity => !!activity.map.summary_polyline);
 
-        this.database.ref(`/${this.token.athlete.id}/`)
+        this.database.ref(`/${this.token.athlete.id}/activities`)
             .orderByChild('activity/start_date')
             .on('child_added', snapshot => {
                 this.addActivityToTable(snapshot.val().activity);
@@ -34,7 +34,7 @@ export class ActivityLoader {
     }
 
     async loadActivity(activityId) {
-        const path = `/${this.token.athlete.id}/${activityId}/activity`;
+        const path = `/${this.token.athlete.id}/activities/${activityId}/activity`;
 
         try {
             return await getNodeValue(this.database, path);
@@ -47,7 +47,7 @@ export class ActivityLoader {
     }
 
     async loadMap(activityId) {
-        const path = `/${this.token.athlete.id}/${activityId}/map`;
+        const path = `/${this.token.athlete.id}/activities/${activityId}/map`;
 
         try {
             return await getNodeValue(this.database, path);
@@ -60,7 +60,7 @@ export class ActivityLoader {
     }
 
     async loadAltitude(activityId) {
-        const path = `/${this.token.athlete.id}/${activityId}/altitude`;
+        const path = `/${this.token.athlete.id}/activities/${activityId}/altitude`;
 
         try {
             return await getNodeValue(this.database, path);
@@ -74,7 +74,7 @@ export class ActivityLoader {
     }
 
     async loadVelocity(activityId) {
-        const path = `/${this.token.athlete.id}/${activityId}/velocity`;
+        const path = `/${this.token.athlete.id}/activities/${activityId}/velocity`;
 
         try {
             return await getNodeValue(this.database, path);
@@ -88,7 +88,7 @@ export class ActivityLoader {
     }
 
     async loadHeartrate(activityId) {
-        const path = `/${this.token.athlete.id}/${activityId}/heartrate`;
+        const path = `/${this.token.athlete.id}/activities/${activityId}/heartrate`;
 
         try {
             return await getNodeValue(this.database, path);
@@ -102,7 +102,7 @@ export class ActivityLoader {
     }
 
     async loadTime(activityId) {
-        const path = `/${this.token.athlete.id}/${activityId}/time`;
+        const path = `/${this.token.athlete.id}/activities/${activityId}/time`;
 
         try {
             return await getNodeValue(this.database, path);
@@ -116,7 +116,7 @@ export class ActivityLoader {
     }
 
     async loadCoordinates(activityId) {
-        const path = `/${this.token.athlete.id}/${activityId}/coordinates`;
+        const path = `/${this.token.athlete.id}/activities/${activityId}/coordinates`;
 
         try {
             return await getNodeValue(this.database, path);
@@ -130,7 +130,7 @@ export class ActivityLoader {
     }
 
     async loadDistance(activityId) {
-        const path = `/${this.token.athlete.id}/${activityId}/distance`;
+        const path = `/${this.token.athlete.id}/activities/${activityId}/distance`;
 
         try {
             return await getNodeValue(this.database, path);
