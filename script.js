@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('activities-toggle').addEventListener('click', () => toggleOverlay());
 
         document.getElementById('auth').parentNode.removeChild(document.getElementById('auth'));
-        const loader = new ActivityLoader();
-        await loader.loadActivities(await fetchToken());
+        const loader = new ActivityLoader(await fetchToken());
+        await loader.loadActivities();
 
         document.getElementById('circle-points-toggle').addEventListener('click', () => loader.updateMap());
     } else {

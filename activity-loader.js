@@ -1,104 +1,132 @@
 import { SimilarityCalculator, maxDistanceForSimilarity } from "./similarity-calculator.js";
 import { LapCalculator } from "./lap-calculator.js";
-import { initFirebaseDatabase, nodeExists } from "./firebase.js";
+import { initFirebaseDatabase, getNodeValue } from "./firebase.js";
 import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map.js";
 import { getRandomColor } from "./util.js";
 
 export class ActivityLoader {
-    constructor() {
+    constructor(token) {
+        this.token = token;
+
         this.database = initFirebaseDatabase();
 
         this.similarityCalculator = new SimilarityCalculator();
         this.lapCalculator = new LapCalculator();
 
-        this.coordinateMap = new Map();
         this.visibleActivities = [];
     }
 
-    async loadActivities(token) {
-        const ACTIVITIES_URI = `https://www.strava.com/api/v3/athlete/activities?access_token=${token.access_token}`;
+    async loadActivities() {
+        const ACTIVITIES_URI = `https://www.strava.com/api/v3/athlete/activities?access_token=${this.token.access_token}`;
         let activities = await fetch(ACTIVITIES_URI).then(response => response.json());
         activities = activities.filter(activity => !!activity.map.summary_polyline);
 
-        this.database.ref(`/${token.athlete.id}/`)
+        this.database.ref(`/${this.token.athlete.id}/`)
             .orderByChild('activity/start_date')
             .on('child_added', snapshot => {
-                this.loadActivity(snapshot.val().activity);
+                this.addActivityToTable(snapshot.val().activity);
             });
 
         for (let activity of activities) {
-            await this.loadToFirebase(token, activity);
+            this.loadActivity(activity.id);
         }
     }
 
-    async loadToFirebase(token, activity) {
-        const path = `/${token.athlete.id}/${activity.id}/activity`;
-        const exists = await nodeExists(this.database, path);
-        if (!exists) {
-            const ACTIVITY_URI = `https://www.strava.com/api/v3/activities/${activity.id}?access_token=${token.access_token}`;
-            activity = await fetch(ACTIVITY_URI).then(response => response.json());
-            this.database.ref(path).set(activity);
+    async loadActivity(activityId) {
+        const path = `/${this.token.athlete.id}/${activityId}/activity`;
 
+        try {
+            return await getNodeValue(this.database, path);
+        } catch (error) {
+            const ACTIVITY_URI = `https://www.strava.com/api/v3/activities/${activityId}?access_token=${this.token.access_token}`;
+            const activity = await fetch(ACTIVITY_URI).then(response => response.json());
+            await this.database.ref(path).set(activity);
+            return activity;
         }
     }
 
-    async loadAltitude(token, activity) {
-        const path = `/${token.athlete.id}/${activity.id}/altitude`;
-        const exists = await nodeExists(this.database, path);
-        if (!exists) {
-            const ALTITUDE_URI = `https://www.strava.com/api/v3/activities/${activity}/streams?key=altitude&key_by_type=true&access_token=${token.access_token}`;
+    async loadMap(activityId) {
+        const path = `/${this.token.athlete.id}/${activityId}/map`;
+
+        try {
+            return await getNodeValue(this.database, path);
+        } catch (error) {
+            const activity = await this.loadActivity(activityId);
+            const map = polyline.decode(activity.map.polyline).map(coord => [coord[1], coord[0]]);
+            await this.database.ref(path).set(map);
+            return map;
+        }
+    }
+
+    async loadAltitude(activityId) {
+        const path = `/${this.token.athlete.id}/${activityId}/altitude`;
+
+        try {
+            return await getNodeValue(this.database, path);
+        } catch (error) {
+            const ALTITUDE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/altitude?access_token=${this.token.access_token}`;
             const altitude = await fetch(ALTITUDE_URI).then(response => response.json());
-            this.database.ref(path).set(altitude);
+            await this.database.ref(path).set(altitude);
+            return altitude;
         }
     }
 
-    async loadVelocity(token, activity) {
-        const path = `/${token.athlete.id}/${activity.id}/velocity`;
-        const exists = await nodeExists(this.database, path);
-        if (!exists) {
-            const VELOCITY_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams?key=velocity&key_by_type=true&access_token=${token.access_token}`;
+    async loadVelocity(activityId) {
+        const path = `/${this.token.athlete.id}/${activityId}/velocity`;
+
+        try {
+            return await getNodeValue(this.database, path);
+        } catch (error) {
+            const VELOCITY_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/velocity_smooth?access_token=${this.token.access_token}`;
             const velocity = await fetch(VELOCITY_URI).then(response => response.json());
-            this.database.ref(path).set(velocity);
+            await this.database.ref(path).set(velocity);
+            return velocity;
         }
     }
 
-    async loadHeartrate(token, activity) {
-        const path = `/${token.athlete.id}/${activity.id}/heartrate`;
-        const exists = await nodeExists(this.database, path);
-        if (!exists) {
-            const HEARTRATE_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams?key=heartrate&key_by_type=true&access_token=${token.access_token}`;
+    async loadHeartrate(activityId) {
+        const path = `/${this.token.athlete.id}/${activityId}/heartrate`;
+
+        try {
+            return await getNodeValue(this.database, path);
+        } catch (error) {
+            const HEARTRATE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/heartrate?access_token=${this.token.access_token}`;
             const heartrate = await fetch(HEARTRATE_URI).then(response => response.json());
-            this.database.ref(path).set(heartrate);
+            await this.database.ref(path).set(heartrate);
+            return heartrate;
         }
     }
 
-    async loadTime(token, activity) {
-        const path = `/${token.athlete.id}/${activity.id}/time`;
-        const exists = await nodeExists(this.database, path);
-        if (!exists) {
-            const TIME_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams?key=time&key_by_type=true&access_token=${token.access_token}`;
+    async loadTime(activityId) {
+        const path = `/${this.token.athlete.id}/${activityId}/time`;
+
+        try {
+            return await getNodeValue(this.database, path);
+        } catch (error) {
+            const TIME_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/time?access_token=${this.token.access_token}`;
             const time = await fetch(TIME_URI).then(response => response.json());
-            this.database.ref(path).set(time);
+            await this.database.ref(path).set(time);
+            return time;
         }
     }
 
-    async loadLatlng(token, activity) {
-        const path = `/${token.athlete.id}/${activity.id}/latlng`;
-        const exists = await nodeExists(this.database, path);
-        if (!exists) {
-            const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams?key=latlng&key_by_type=true&access_token=${token.access_token}`;
+    async loadCoordinates(activityId) {
+        const path = `/${this.token.athlete.id}/${activityId}/coordinates`;
+
+        try {
+            return await getNodeValue(this.database, path);
+        } catch (error) {
+            const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/latlng?access_token=${this.token.access_token}`;
             const latlng = await fetch(LATLNG_URI).then(response => response.json());
-            this.database.ref(path).set(latlng);
+            await this.database.ref(path).set(latlng);
+            return latlng;
         }
     }
 
-    loadActivity(activity) {
+    addActivityToTable(activity) {
         if (!activity) {
             return;
         }
-
-        const coordinates = polyline.decode(activity.map.polyline).map(coord => [coord[1], coord[0]]);
-        this.coordinateMap.set(activity.id, coordinates);
 
         const row = document.createElement('tr');
 
@@ -131,7 +159,7 @@ export class ActivityLoader {
                 this.visibleActivities.push(activity.id);
             }
 
-            this.updateMap();
+            await this.updateMap();
         });
         cellDisplay.appendChild(buttonDisplay);
 
@@ -156,9 +184,10 @@ export class ActivityLoader {
         }*/
     }
 
-    displayActivities() {
+    async displayActivities() {
         for (let activity of this.visibleActivities) {
-            const coordinates = this.coordinateMap.get(activity);
+            const coordinates = await this.loadMap(activity);
+
             addLineLayer(coordinates, 'black');
             addPointLayer(coordinates[0], 'red');
             addPointLayer(coordinates[coordinates.length - 1], 'green');
@@ -174,11 +203,11 @@ export class ActivityLoader {
         }
     }
 
-    updateMap() {
+    async updateMap() {
         clearMap();
         this.displayCirclesAroundPoints();
-        this.displayActivities();
-        this.displayCalculations();
+        await this.displayActivities();
+        //this.displayCalculations();
         fitToBounds();
     }
 }

@@ -9,13 +9,13 @@ export function initFirebaseDatabase() {
     return firebase.database();
 }
 
-export async function nodeExists(database, path) {
+export async function getNodeValue(database, path) {
     return new Promise((resolve, reject) => {
         database.ref(path).once('value').then(snapshot => {
             if (snapshot.val()) {
-                resolve(true);
+                resolve(snapshot.val());
             } else {
-                resolve(false);
+                reject()
             }
         });
     });
