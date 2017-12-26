@@ -1,69 +1,62 @@
-import { splitLine } from "./util.js";
+import { splitLine, getRandomColor } from "./util.js";
+import { optionsMaxDistanceForSimilarity } from "./options.js";
+import { addLineLayer } from "./map.js";
 
-export class LapCalculator {
-    constructor(map) {
-        this.map = map;
-    }
+export function displayLaps(coordinates) {
+    const maxDistance = optionsMaxDistanceForSimilarity();
 
-    showLap(coordinates) {
-        const distance = 0.025;
-        coordinates = splitLine(coordinates, 0.01);
-        console.log(coordinates.length);
+    let possibleLaps = [];
 
-        let possibleLaps = [];
+    // find possible laps
+    for (let lapStartIndex = 0; lapStartIndex < coordinates.length; ++lapStartIndex) {
+        const lapStart = turf.point(coordinates[lapStartIndex]);
+        const lap = [coordinates[lapStartIndex]];
 
-        // find possible laps
-        for (let lapStartIndex = 0; lapStartIndex < coordinates.length; ++lapStartIndex) {
-            const lapStart = turf.point(coordinates[lapStartIndex]);
-            const lap = [coordinates[lapStartIndex]];
-            
-            for (let j = lapStartIndex + 1; j < coordinates.length; ++j) {
-                const p2 = coordinates[j];
+        for (let j = lapStartIndex + 1; j < coordinates.length; ++j) {
+            const p2 = coordinates[j];
 
-                if (turf.distance(lapStart, turf.point(p2)) <= distance) {
-                    possibleLaps.push({ lapStartIndex, lap });
-                    break;
-                } else {
-                    lap.push(p2);
-                }
+            if (lap.length >= 2 &&
+                turf.distance(lapStart, turf.point(p2)) <= maxDistance &&
+                turf.length(turf.lineString(lap)) >= 0.25) {
+                possibleLaps.push({ lapStartIndex, lap });
+                break;
+            } else {
+                lap.push(p2);
             }
         }
+    }
 
-        // minimum 100m per lap
-        possibleLaps = possibleLaps
-            .filter(possibleLap => possibleLap.lap.length >= 2)
-            .filter(possibleLap => turf.length(turf.lineString(possibleLap.lap)) >= 0.1);
+    // minimum 2 laps
+    const finalLaps = [];
+    for (const possibleLap of possibleLaps) {
+        let count = 0;
 
-        // minimum 2 laps
-        const finalLaps = [];
-        for (const possibleLap of possibleLaps) {
-            let count = 0;
-            
-            let i = possibleLap.lapStartIndex;
+        let i = possibleLap.lapStartIndex;
 
-            lapLoop:
-            while (i < possibleLap.lap.length) {
-                const currentPoint = turf.point(coordinates[i]);
-                
-                for (let lapIndex = possibleLap.lapStartIndex; lapIndex < possibleLap.lapStartIndex + possibleLap.lap.length - 1; ++lapIndex) {
-                    const lapPoint = turf.point(coordinates[lapIndex]);
+        lapLoop:
+        while (i < possibleLap.lap.length) {
+            const currentPoint = turf.point(coordinates[i]);
 
-                    if (turf.distance(lapPoint, currentPoint) > distance) {
-                        break lapLoop;
-                    }
+            for (let lapIndex = possibleLap.lapStartIndex; lapIndex < possibleLap.lapStartIndex + possibleLap.lap.length - 1; ++lapIndex) {
+                const lapPoint = turf.point(coordinates[lapIndex]);
 
-                    ++i;
+                if (turf.distance(lapPoint, currentPoint) > maxDistance) {
+                    break lapLoop;
                 }
 
-                ++count;
                 ++i;
             }
 
-            if (count >= 1) {
-                finalLaps.push(possibleLap.lap);
-            }
+            ++count;
+            ++i;
         }
 
-        console.log(finalLaps);
+        if (count >= 1) {
+            finalLaps.push(possibleLap.lap);
+        }
+    }
+
+    for (let lap of finalLaps) {
+        addLineLayer(lap, getRandomColor(), 5);
     }
 }

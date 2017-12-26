@@ -1,5 +1,5 @@
 import { SimilarityCalculator } from "./similarity-calculator.js";
-import { LapCalculator } from "./lap-calculator.js";
+import { displayLaps } from "./lap-calculator.js";
 import { initFirebaseDatabase, getNodeValue } from "./firebase.js";
 import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map.js";
 import { getRandomColor } from "./util.js";
@@ -12,7 +12,6 @@ export class ActivityLoader {
         this.database = initFirebaseDatabase();
 
         this.similarityCalculator = new SimilarityCalculator();
-        this.lapCalculator = new LapCalculator();
 
         this.visibleActivities = [];
     }
@@ -196,15 +195,13 @@ export class ActivityLoader {
     async displayCalculations() {
         const routes = []
         for (let activity of this.visibleActivities) {
-            routes.push(await this.loadCoordinates(activity));
+            const coordinates = await this.loadCoordinates(activity);
+            displayLaps(coordinates);
+
+            routes.push(coordinates);
         }
 
         this.similarityCalculator.drawSimilarLines(routes);
-
-        /*
-        for (let coordinates of routes) {
-            this.lapCalculator.showLap(coordinates);
-        }*/
     }
 
     async displayActivities() {
@@ -214,7 +211,6 @@ export class ActivityLoader {
             addLineLayer(coordinates, 'black', 1);
             addPointLayer(coordinates[0], 'green');
             addPointLayer(coordinates[coordinates.length - 1], 'red');
-
         }
     }
 
