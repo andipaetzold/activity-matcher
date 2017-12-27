@@ -22,10 +22,9 @@ export class ActivityLoader {
             .collection('activities')
             .orderBy('start_date')
             .onSnapshot(snap => {
+                this.clearActivityTable();
                 snap.docChanges.forEach(change => {
-                    if (change.type === 'added') {
-                        this.addActivityToTable(change.doc.data());
-                    }
+                    this.addActivityToTable(change.doc.data());
                 });
             });
 
@@ -161,6 +160,13 @@ export class ActivityLoader {
         const latlngResponse = responses.find(r => r.type === 'latlng');
         latlngResponse.data = latlngResponse.data.map(e => ({ lat: e[0], lng: e[1] }));
         await this.activityRef(activityId).collection('data').doc('coordinates').set(latlngResponse);
+    }
+
+    clearActivityTable() {
+        const table = document.getElementById('activity-table');
+        while (table.hasChildNodes()) {
+            table.removeChild(table.firstChild);
+        }
     }
 
     addActivityToTable(activity) {
