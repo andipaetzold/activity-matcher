@@ -6,5 +6,6 @@ export function initFirestore() {
     };
 
     firebase.initializeApp(config);
+    firebase.firestore().enablePersistence();
     return firebase.firestore();
 }
