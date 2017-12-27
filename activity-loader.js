@@ -1,6 +1,6 @@
 import { SimilarityCalculator } from "./similarity-calculator.js";
 import { displayLaps } from "./lap-calculator.js";
-import { initFirebaseDatabase, getNodeValue } from "./firebase.js";
+import { initFirestore } from "./firebase.js";
 import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map.js";
 import { getRandomColor } from "./util.js";
 import { optionsMaxDistanceForSimilarity, optionsDrawCirclesAroundPoints } from "./options.js";
@@ -9,7 +9,7 @@ export class ActivityLoader {
     constructor(token) {
         this.token = token;
 
-        this.database = initFirebaseDatabase();
+        this.firestore = initFirestore();
 
         this.similarityCalculator = new SimilarityCalculator();
 
@@ -17,129 +17,150 @@ export class ActivityLoader {
     }
 
     async loadActivities() {
+        this.firestore.collection('athletes')
+            .doc(this.token.athlete.id.toString())
+            .collection('activities')
+            .orderBy('start_date')
+            .onSnapshot(snap => {
+                snap.docChanges.forEach(change => {
+                    if (change.type === 'added') {
+                        this.addActivityToTable(change.doc.data());
+                    }
+                });
+            });
+
         const ACTIVITIES_URI = `https://www.strava.com/api/v3/athlete/activities?access_token=${this.token.access_token}`;
         let activities = await fetch(ACTIVITIES_URI).then(response => response.json());
         activities = activities.filter(activity => !!activity.map.summary_polyline);
-
-        this.database.ref(`/${this.token.athlete.id}/activities`)
-            .orderByChild('activity/start_date')
-            .on('child_added', snapshot => {
-                this.addActivityToTable(snapshot.val().activity);
-            });
 
         for (let activity of activities) {
             this.loadActivity(activity.id);
         }
     }
 
-    async loadActivity(activityId) {
-        const path = `/${this.token.athlete.id}/activities/${activityId}/activity`;
+    activityRef(activityId) {
+        return this.firestore.collection('athletes').doc(this.token.athlete.id.toString()).collection('activities').doc(activityId.toString());
+    }
 
-        try {
-            return await getNodeValue(this.database, path);
-        } catch (error) {
+    async loadActivity(activityId) {
+        const docRef = this.activityRef(activityId);
+        const doc = await docRef.get();
+        if (doc.exists) {
+            const docData = doc.data();
+
+            docData.map.polyline = polyline.decode(docData.map.polyline).map(coord => [coord[1], coord[0]]);
+            docData.map.summary_polyline = polyline.decode(docData.map.summary_polyline).map(coord => [coord[1], coord[0]]);
+
+            return docData;
+        } else {
             const ACTIVITY_URI = `https://www.strava.com/api/v3/activities/${activityId}?access_token=${this.token.access_token}`;
             const activity = await fetch(ACTIVITY_URI).then(response => response.json());
-            await this.database.ref(path).set(activity);
+            await docRef.set(activity);
             return activity;
         }
     }
 
-    async loadMap(activityId) {
-        const path = `/${this.token.athlete.id}/activities/${activityId}/map`;
-
-        try {
-            return await getNodeValue(this.database, path);
-        } catch (error) {
-            const activity = await this.loadActivity(activityId);
-            const map = polyline.decode(activity.map.polyline).map(coord => [coord[1], coord[0]]);
-            await this.database.ref(path).set(map);
-            return map;
-        }
-    }
-
     async loadAltitude(activityId) {
-        const path = `/${this.token.athlete.id}/activities/${activityId}/altitude`;
+        const docRef = this.activityRef(activityId).collection('data').doc('altitude');
+        const doc = await docRef.get();
 
-        try {
-            return await getNodeValue(this.database, path);
-        } catch (error) {
-            const ALTITUDE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/altitude?access_token=${this.token.access_token}`;
-            let altitude = await fetch(ALTITUDE_URI).then(response => response.json());
-            altitude = altitude.find(e => e.type == 'altitude').data;
-            await this.database.ref(path).set(altitudealtitude);
-            return altitude;
+        if (doc.exists) {
+            return data.data();
+        } else {
+            await this.loadAllData(activityId);
+            return this.loadALtitude(activityId);
         }
     }
 
     async loadVelocity(activityId) {
-        const path = `/${this.token.athlete.id}/activities/${activityId}/velocity`;
+        const docRef = this.activityRef(activityId).collection('data').doc('velocity');
+        const doc = await docRef.get();
 
-        try {
-            return await getNodeValue(this.database, path);
-        } catch (error) {
-            const VELOCITY_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/velocity_smooth?access_token=${this.token.access_token}`;
-            let velocity = await fetch(VELOCITY_URI).then(response => response.json());
-            velocity = velocity.find(e => e.type == 'velocity_smooth').data;
-            await this.database.ref(path).set(velocity);
-            return velocity;
+        if (doc.exists) {
+            return doc.data();
+        } else {
+            await this.loadAllData(activityId);
+            return this.loadVelocity(activityId);
         }
     }
 
     async loadHeartrate(activityId) {
-        const path = `/${this.token.athlete.id}/activities/${activityId}/heartrate`;
+        const docRef = this.activityRef(activityId).collection('data').doc('heartrate');
+        const doc = await docRef.get();
 
-        try {
-            return await getNodeValue(this.database, path);
-        } catch (error) {
-            const HEARTRATE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/heartrate?access_token=${this.token.access_token}`;
-            let heartrate = await fetch(HEARTRATE_URI).then(response => response.json());
-            heartrate = heartrate.find(e => e.type == 'heartrate').data;
-            await this.database.ref(path).set(heartrate);
-            return heartrate;
+        if (doc.exists) {
+            return doc.data();
+        } else {
+            await this.loadAllData(activityId);
+            return this.loadHeartrate(activityId);
         }
     }
 
     async loadTime(activityId) {
-        const path = `/${this.token.athlete.id}/activities/${activityId}/time`;
+        const docRef = this.activityRef(activityId).collection('data').doc('time');
+        const doc = await docRef.get();
 
-        try {
-            return await getNodeValue(this.database, path);
-        } catch (error) {
-            const TIME_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/time?access_token=${this.token.access_token}`;
-            let time = await fetch(TIME_URI).then(response => response.json());
-            time = time.find(e => e.type == 'time').data;
-            await this.database.ref(path).set(time);
-            return time;
+        if (doc.exists) {
+            return data.data();
+        } else {
+            await this.loadAllData(activityId);
+            return this.loadTime(activityId);
         }
     }
 
     async loadCoordinates(activityId) {
-        const path = `/${this.token.athlete.id}/activities/${activityId}/coordinates`;
+        const docRef = this.activityRef(activityId).collection('data').doc('coordinates');
+        const doc = await docRef.get();
 
-        try {
-            return await getNodeValue(this.database, path);
-        } catch (error) {
-            const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/latlng?access_token=${this.token.access_token}`;
-            let coordinates = await fetch(LATLNG_URI).then(response => response.json());
-            coordinates = coordinates.find(e => e.type == 'latlng').data.map(coord => [coord[1], coord[0]]);
-            await this.database.ref(path).set(coordinates);
-            return coordinates;
+        if (doc.exists) {
+            return doc.data().data.map(e => [e.lng, e.lat]);
+        } else {
+            await this.loadAllData(activityId);
+            return this.loadCoordinates(activityId);
         }
     }
 
     async loadDistance(activityId) {
-        const path = `/${this.token.athlete.id}/activities/${activityId}/distance`;
+        const docRef = this.activityRef(activityId).collection('data').doc('distance');
+        const doc = await docRef.get();
 
-        try {
-            return await getNodeValue(this.database, path);
-        } catch (error) {
-            const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams?access_token=${this.token.access_token}`;
-            let distance = await fetch(LATLNG_URI).then(response => response.json());
-            distance = distance.find(e => e.type == 'distance').data;
-            await this.database.ref(path).set(distance);
-            return distance;
+        if (doc.exists) {
+            return doc.data();
+        } else {
+            await this.loadAllData(activityId);
+            return this.loadDistance(activityId);
         }
+    }
+
+    async loadAllData(activityId) {
+        const ALTITUDE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/altitude?access_token=${this.token.access_token}`;
+        const VELOCITY_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/velocity_smooth?access_token=${this.token.access_token}`;
+        const HEARTRATE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/heartrate?access_token=${this.token.access_token}`;
+        const TIME_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/time?access_token=${this.token.access_token}`;
+        const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/latlng?access_token=${this.token.access_token}`;
+
+        let responses = [
+            fetch(ALTITUDE_URI),
+            fetch(HEARTRATE_URI),
+            fetch(LATLNG_URI),
+            fetch(TIME_URI),
+            fetch(VELOCITY_URI),
+        ];
+        responses = await Promise.all(responses);
+        responses = await Promise.all(responses.map(response => response.json()));
+        responses = responses.reduce((a, b) => [...a, ...b], []);
+
+        await this.activityRef(activityId).collection('data').doc('distance').set(responses.find(r => r.type === 'distance'));
+        await this.activityRef(activityId).collection('data').doc('altitude').set(responses.find(r => r.type === 'altitude'));
+        if (responses.find(r => r.type == 'heartrate')) {
+            await this.activityRef(activityId).collection('data').doc('heartrate').set(responses.find(r => r.type === 'heartrate'));
+        }
+        await this.activityRef(activityId).collection('data').doc('time').set(responses.find(r => r.type === 'time'));
+        await this.activityRef(activityId).collection('data').doc('velocity').set(responses.find(r => r.type === 'velocity_smooth'));
+
+        const latlngResponse = responses.find(r => r.type === 'latlng');
+        latlngResponse.data = latlngResponse.data.map(e => ({ lat: e[0], lng: e[1] }));
+        await this.activityRef(activityId).collection('data').doc('coordinates').set(latlngResponse);
     }
 
     addActivityToTable(activity) {
@@ -217,7 +238,7 @@ export class ActivityLoader {
     async displayCirclesAroundPoints() {
         if (optionsDrawCirclesAroundPoints()) {
             for (let activity of this.visibleActivities) {
-                const coordinates = await this.loadMap(activity);
+                const coordinates = (await this.loadActivity(activity)).map.polyline;
                 addCircleAroudPointsLayer(coordinates, getRandomColor(), 'lightgreen', optionsMaxDistanceForSimilarity());
             }
         }

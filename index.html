@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,17 +9,19 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/5.0.4/turf.min.js"></script>
     <script src="https://api.mapbox.com/mapbox-gl-js/v0.40.0/mapbox-gl.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/4.6.2/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/4.6.2/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.6.2/firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.6.2/firebase-firestore.js"></script>
 
     <script rel="stylesheet" src="vendor/polyline.js"></script>
     <script rel="stylesheet" type="module" src="script.js"></script>
 
     <link href="https://api.mapbox.com/mapbox-gl-js/v0.40.0/mapbox-gl.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb"
+        crossorigin="anonymous">
 
     <link href="style.css" rel="stylesheet" />
 </head>
+
 <body style="margin: 0; padding: 0; height: 100vh">
     <div id="map"></div>
 
@@ -36,13 +39,11 @@
         <button id="activities-toggle" type="button" class="btn">Show / Hide Activities</button>
 
         <label>
-            <input id="options-circles-around-points" type="checkbox">
-            Circles around points
+            <input id="options-circles-around-points" type="checkbox"> Circles around points
         </label>
 
         <label>
-            <input id="options-distance-similarity" type="number" min="0.001" step="0.001" value="0.010">
-            Maximum distance for similarity
+            <input id="options-distance-similarity" type="number" min="0.001" step="0.001" value="0.010"> Maximum distance for similarity
         </label>
     </div>
 
@@ -63,4 +64,5 @@
         </table>
     </div>
 </body>
+
 </html>
