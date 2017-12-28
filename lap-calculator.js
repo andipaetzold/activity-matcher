@@ -1,6 +1,6 @@
 import { splitLine, getRandomColor } from "./util.js";
 import { optionsMaxDistanceForSimilarity } from "./options.js";
-import { addLineLayer } from "./map.js";
+import { addLineLayer, addPointLayer } from "./map.js";
 
 export function displayLaps(coordinates) {
     const maxDistance = optionsMaxDistanceForSimilarity();
@@ -28,35 +28,58 @@ export function displayLaps(coordinates) {
 
     // minimum 2 laps
     const finalLaps = [];
+    possibleLaps = [possibleLaps.filter(l => turf.length(turf.lineString(l.lap)) < 10)[0]];
     for (const possibleLap of possibleLaps) {
-        let count = 0;
+        let count = 1;
 
-        let i = possibleLap.lapStartIndex;
+        let i = possibleLap.lapStartIndex + possibleLap.lap.length;
 
-        lapLoop:
-        while (i < possibleLap.lap.length) {
-            const currentPoint = turf.point(coordinates[i]);
+        const lap = turf.lineString(possibleLap.lap);
 
-            for (let lapIndex = possibleLap.lapStartIndex; lapIndex < possibleLap.lapStartIndex + possibleLap.lap.length - 1; ++lapIndex) {
-                const lapPoint = turf.point(coordinates[lapIndex]);
+        let prevOnLap = 0;
+        const doubleLap = possibleLap.lap.concat(possibleLap.lap);
 
-                if (turf.distance(lapPoint, currentPoint) > maxDistance) {
-                    break lapLoop;
+        while (i < coordinates.length) {
+
+            let match = false;
+
+            let j = 0;
+            let checkDist = 0;
+            while (checkDist < maxDistance) {
+                const line = [doubleLap[prevOnLap + j], doubleLap[prevOnLap + j + 1]];
+                const dist = turf.pointToLineDistance(coordinates[i], turf.lineString(line));
+
+                if (dist < maxDistance) {
+                    prevOnLap += j;
+                    match = true;
+                    break;
                 }
 
-                ++i;
+                checkDist += turf.length(turf.lineString(line));
+
+                ++j
             }
 
-            ++count;
+            if (!match) {
+                break;
+            }
+
+            if (prevOnLap + 1 >= possibleLap.lap.length) {
+                prevOnLap -= possibleLap.lap.length;
+                prevOnLap = Math.max(0, prevOnLap);
+                ++count;
+            }
+
             ++i;
         }
 
-        if (count >= 1) {
+        if (count >= 2) {
             finalLaps.push(possibleLap.lap);
         }
     }
 
     for (let lap of finalLaps) {
+        lap.push(lap[0]);
         addLineLayer(lap, getRandomColor(), 5);
     }
 }
