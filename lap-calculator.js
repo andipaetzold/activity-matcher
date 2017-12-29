@@ -1,8 +1,9 @@
 import { splitLine, getRandomColor } from "./util.js";
-import { optionsMaxDistanceForSimilarity } from "./options.js";
+import { optionsMaxDistanceForSimilarity, optionsMaxWrongDistance } from "./options.js";
 import { addLineLayer, addPointLayer } from "./map.js";
 
 export function displayLaps(coordinates) {
+    const maxWrongDist = optionsMaxWrongDistance();
     const maxDistance = optionsMaxDistanceForSimilarity();
 
     let possibleLaps = [];
@@ -39,6 +40,7 @@ export function displayLaps(coordinates) {
         let prevOnLap = 0;
         const doubleLap = possibleLap.lap.concat(possibleLap.lap);
 
+        let curWrongDist = 0;
         while (i < coordinates.length) {
 
             let match = false;
@@ -61,7 +63,17 @@ export function displayLaps(coordinates) {
             }
 
             if (!match) {
-                break;
+                const line = [coordinates[j - 1], coordinates[j]];
+                const dist = turf.length(turf.lineString(line));
+                curWrongDist += dist;
+
+                if (curWrongDist > maxWrongDist) {
+                    break;
+                }
+
+                ++prevOnLap;
+            } else {
+                curWrongDist = 0;
             }
 
             if (prevOnLap + 1 >= possibleLap.lap.length) {
@@ -80,6 +92,6 @@ export function displayLaps(coordinates) {
 
     for (let lap of finalLaps) {
         lap.push(lap[0]);
-        addLineLayer(lap, getRandomColor(), 5);
+        addLineLayer(lap, 'purple', 5);
     }
 }
