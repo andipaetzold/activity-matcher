@@ -9,17 +9,23 @@ export function displayLaps(coordinates) {
     let possibleLaps = [];
 
     // find possible laps
-    for (let lapStartIndex = 0; lapStartIndex < coordinates.length; ++lapStartIndex) {
-        const lapStart = turf.point(coordinates[lapStartIndex]);
-        const lap = [coordinates[lapStartIndex]];
+    for (let lapStartIndex = 0; lapStartIndex < coordinates.length - 1; ++lapStartIndex) {
+        const lap = [coordinates[lapStartIndex + 1]];
+
+        const startLine = turf.lineString([coordinates[lapStartIndex], coordinates[lapStartIndex + 1]]);
 
         for (let j = lapStartIndex + 1; j < coordinates.length; ++j) {
             const p2 = coordinates[j];
 
+            const result = turf.nearestPointOnLine(startLine, turf.point(p2));
             if (lap.length >= 2 &&
-                turf.distance(lapStart, turf.point(p2)) <= maxDistance &&
+                result.properties.dist <= maxDistance &&
                 turf.length(turf.lineString(lap)) >= 0.25) {
-                possibleLaps.push({ lapStartIndex, lap });
+                lap.unshift(result.geometry.coordinates);
+                possibleLaps.push({
+                    lap,
+                    nextLapStartIndex: j
+                });
                 break;
             } else {
                 lap.push(p2);
@@ -31,13 +37,13 @@ export function displayLaps(coordinates) {
     const finalLaps = [];
     possibleLaps = [possibleLaps.filter(l => turf.length(turf.lineString(l.lap)) < 10)[0]];
     for (const possibleLap of possibleLaps) {
-        let count = 1;
+        let lapCount = 1;
 
-        let i = possibleLap.lapStartIndex + possibleLap.lap.length;
-
-        const lap = turf.lineString(possibleLap.lap);
+        let i = possibleLap.nextLapStartIndex;
 
         let prevOnLap = 0;
+
+        const lap = turf.lineString(possibleLap.lap);
         const doubleLap = possibleLap.lap.concat(possibleLap.lap);
 
         let curWrongDist = 0;
@@ -79,13 +85,13 @@ export function displayLaps(coordinates) {
             if (prevOnLap + 1 >= possibleLap.lap.length) {
                 prevOnLap -= possibleLap.lap.length;
                 prevOnLap = Math.max(0, prevOnLap);
-                ++count;
+                ++lapCount;
             }
 
             ++i;
         }
 
-        if (count >= 2) {
+        if (lapCount >= 2) {
             finalLaps.push(possibleLap.lap);
         }
     }
