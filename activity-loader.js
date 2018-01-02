@@ -229,7 +229,7 @@ export class ActivityLoader {
     async displayCirclesAroundPoints() {
         if (optionsDrawCirclesAroundPoints()) {
             for (let activityId of this.visibleActivities) {
-                const coordinates = await getCoordinates(activityId);
+                const coordinates = await this.getCoordinates(activityId);
                 addCircleAroudPointsLayer(coordinates, getRandomColor(), 'lightgreen', optionsMaxDistanceForSimilarity());
             }
         }
