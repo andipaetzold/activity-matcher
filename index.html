@@ -36,7 +36,11 @@
 
 
     <div id="options">
-        <button id="activities-toggle" type="button" class="btn">Show / Hide Activities</button>
+        <button id="activities-toggle" type="button" class="btn btn-sm">Show / Hide Activities</button>
+
+        <label>
+            <input id="options-fit-to-bounds" type="checkbox" checked> Fit to bounds
+        </label>
 
         <label>
             <input id="options-circles-around-points" type="checkbox"> Circles around points
@@ -44,6 +48,24 @@
 
         <label>
             <input id="options-distance-similarity" type="number" min="0.001" step="0.001" value="0.03"> Maximum distance for similarity
+        </label>
+
+        <label>
+            <input id="options-calculate-laps" type="checkbox"> Calculate laps
+        </label>
+
+        <label>
+            <input id="options-calculate-similar-activities" type="checkbox"> Calculate similar activities
+        </label>
+
+        <label>
+            <select id="options-coordinate-quality">
+                <option value="1">Summary Polygon</option>
+                <option value="2">Polygon</option>
+                <option value="3">Detailed</option>
+            </select>
+
+            Coordinate quality
         </label>
     </div>
 

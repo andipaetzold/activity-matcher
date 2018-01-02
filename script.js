@@ -16,7 +16,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loader.loadActivities();
 
         document.getElementById('options-circles-around-points').addEventListener('change', () => loader.updateMap());
+        document.getElementById('options-fit-to-bounds').addEventListener('change', () => loader.updateMap());
         document.getElementById('options-distance-similarity').addEventListener('input', () => loader.updateMap());
+        document.getElementById('options-calculate-laps').addEventListener('change', () => loader.updateMap());
+        document.getElementById('options-calculate-similar-activities').addEventListener('change', () => loader.updateMap());
+        document.getElementById('options-coordinate-quality').addEventListener('change', () => loader.updateMap());
+
     } else {
         document.getElementById('options').style.display = 'none';
     }

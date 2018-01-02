@@ -3,7 +3,7 @@ import { displayLaps } from "./lap-calculator.js";
 import { initFirestore } from "./firebase.js";
 import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map.js";
 import { getRandomColor } from "./util.js";
-import { optionsMaxDistanceForSimilarity, optionsDrawCirclesAroundPoints } from "./options.js";
+import { optionsMaxDistanceForSimilarity, optionsDrawCirclesAroundPoints, optionsCoordinateQuality, optionsCalculateLaps, optionsCalculateSimilarActivities, optionsFitToBounds } from "./options.js";
 
 export class ActivityLoader {
     constructor(token) {
@@ -222,20 +222,38 @@ export class ActivityLoader {
 
     async displayCalculations() {
         const routes = []
-        for (let activity of this.visibleActivities) {
-            const coordinates = (await this.loadActivity(activity)).map.polyline;
-            displayLaps(coordinates);
+        for (let activityId of this.visibleActivities) {
+            const coordinates = this.getCoordinates(activityId);
+
+            if (optionsCalculateLaps()) {
+                displayLaps(coordinates);
+            }
 
             routes.push(coordinates);
         }
 
-        // this.similarityCalculator.drawSimilarLines(routes);
+        if (optionsCalculateSimilarActivities()) {
+            this.similarityCalculator.drawSimilarLines(routes);
+        }
+    }
+
+    async getCoordinates(activityId) {
+        let activity;
+        switch (optionsCoordinateQuality()) {
+            case 1:
+                activity = await this.loadActivity(activityId);
+                return activity.map.summary_polyline;
+            case 2:
+                activity = await this.loadActivity(activityId);
+                return activity.map.polyline;
+            case 3:
+                return await loadCoordinates(activityId);
+        }
     }
 
     async displayActivities() {
-        for (let activity of this.visibleActivities) {
-            const coordinates = await this.loadCoordinates(activity);
-
+        for (const activityId of this.visibleActivities) {
+            const coordinates = await this.getCoordinates(activityId);
             addLineLayer(coordinates, 'black', 1);
             addPointLayer(coordinates[0], 'green');
             addPointLayer(coordinates[coordinates.length - 1], 'red');
@@ -256,6 +274,9 @@ export class ActivityLoader {
         await this.displayCirclesAroundPoints();
         await this.displayActivities();
         await this.displayCalculations();
-        fitToBounds();
+
+        if (optionsFitToBounds()) {
+            fitToBounds();
+        }
     }
 }
