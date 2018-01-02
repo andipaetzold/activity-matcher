@@ -64,7 +64,7 @@ export class ActivityLoader {
         const doc = await docRef.get();
 
         if (doc.exists) {
-            return data.data();
+            return doc.data();
         } else {
             await this.loadAllData(activityId);
             return this.loadDoc(activityId, docId);
@@ -72,27 +72,27 @@ export class ActivityLoader {
     }
 
     async loadAltitude(activityId) {
-        return await loadDoc(activityId, 'altitude');
+        return await this.loadDoc(activityId, 'altitude');
     }
 
     async loadVelocity(activityId) {
-        return await loadDoc(activityId, 'velocity');
+        return await this.loadDoc(activityId, 'velocity');
     }
 
     async loadHeartrate(activityId) {
-        return await loadDoc(activityId, 'heartrate');
+        return await this.loadDoc(activityId, 'heartrate');
     }
 
     async loadTime(activityId) {
-        return await loadDoc(activityId, 'time');
+        return await this.loadDoc(activityId, 'time');
     }
 
     async loadCoordinates(activityId) {
-        return await loadDoc(activityId, 'coordinates');
+        return await this.loadDoc(activityId, 'coordinates');
     }
 
     async loadDistance(activityId) {
-        return await loadDoc(activityId, 'distance');
+        return await this.loadDoc(activityId, 'distance');
     }
 
     async loadAllData(activityId) {
@@ -194,7 +194,8 @@ export class ActivityLoader {
                 activity = await this.loadActivity(activityId);
                 return activity.map.polyline;
             case 3:
-                return await loadCoordinates(activityId);
+                const coordinateData = await this.loadCoordinates(activityId);
+                return coordinateData.data.map(coord => [coord.lng, coord.lat]);
         }
     }
 

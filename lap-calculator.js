@@ -12,9 +12,9 @@ export function displayLaps(coordinates) {
 
         for (let j = lapStartIndex + 1; j < coordinates.length; ++j) {
             const p2 = coordinates[j];
-
             const result = turf.nearestPointOnLine(startLine, turf.point(p2));
-            if (result.properties.dist <= maxDistance && turf.length(turf.lineString(lap)) >= 0.25) {
+
+            if (lap.length >= 2 && result.properties.dist <= maxDistance && turf.length(turf.lineString(lap)) >= 0.25) {
                 lap.unshift(result.geometry.coordinates);
                 lap.push(result.geometry.coordinates);
 
