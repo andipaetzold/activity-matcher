@@ -220,23 +220,6 @@ export class ActivityLoader {
         document.getElementById('activity-table').prepend(row);
     }
 
-    async displayCalculations() {
-        const routes = []
-        for (let activityId of this.visibleActivities) {
-            const coordinates = this.getCoordinates(activityId);
-
-            if (optionsCalculateLaps()) {
-                displayLaps(coordinates);
-            }
-
-            routes.push(coordinates);
-        }
-
-        if (optionsCalculateSimilarActivities()) {
-            this.similarityCalculator.drawSimilarLines(routes);
-        }
-    }
-
     async getCoordinates(activityId) {
         let activity;
         switch (optionsCoordinateQuality()) {
@@ -251,6 +234,23 @@ export class ActivityLoader {
         }
     }
 
+    async displayCalculations() {
+        const routes = []
+        for (let activityId of this.visibleActivities) {
+            const coordinates = await this.getCoordinates(activityId);
+
+            if (optionsCalculateLaps()) {
+                displayLaps(coordinates);
+            }
+
+            routes.push(coordinates);
+        }
+
+        if (optionsCalculateSimilarActivities()) {
+            this.similarityCalculator.drawSimilarLines(routes);
+        }
+    }
+
     async displayActivities() {
         for (const activityId of this.visibleActivities) {
             const coordinates = await this.getCoordinates(activityId);
@@ -262,8 +262,8 @@ export class ActivityLoader {
 
     async displayCirclesAroundPoints() {
         if (optionsDrawCirclesAroundPoints()) {
-            for (let activity of this.visibleActivities) {
-                const coordinates = (await this.loadActivity(activity)).map.polyline;
+            for (let activityId of this.visibleActivities) {
+                const coordinates = await getCoordinates(activityId);
                 addCircleAroudPointsLayer(coordinates, getRandomColor(), 'lightgreen', optionsMaxDistanceForSimilarity());
             }
         }
