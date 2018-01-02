@@ -222,13 +222,13 @@ export class ActivityLoader {
     async displayCalculations() {
         const routes = []
         for (let activity of this.visibleActivities) {
-            const coordinates = await this.loadCoordinates(activity);
+            const coordinates = (await this.loadActivity(activity)).map.polyline;
             displayLaps(coordinates);
 
             routes.push(coordinates);
         }
 
-        this.similarityCalculator.drawSimilarLines(routes);
+        // this.similarityCalculator.drawSimilarLines(routes);
     }
 
     async displayActivities() {

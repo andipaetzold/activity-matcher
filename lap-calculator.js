@@ -1,9 +1,8 @@
 import { splitLine, getRandomColor } from "./util.js";
-import { optionsMaxDistanceForSimilarity, optionsMaxWrongDistance } from "./options.js";
+import { optionsMaxDistanceForSimilarity } from "./options.js";
 import { addLineLayer, addPointLayer } from "./map.js";
 
 export function displayLaps(coordinates) {
-    const maxWrongDist = optionsMaxWrongDistance();
     const maxDistance = optionsMaxDistanceForSimilarity();
 
     let possibleLaps = [];
@@ -22,9 +21,11 @@ export function displayLaps(coordinates) {
                 result.properties.dist <= maxDistance &&
                 turf.length(turf.lineString(lap)) >= 0.25) {
                 lap.unshift(result.geometry.coordinates);
+                lap.push(result.geometry.coordinates);
                 possibleLaps.push({
                     lap,
-                    nextLapStartIndex: j
+                    nextLapStartIndex: j,
+                    lapCount: 1
                 });
                 break;
             } else {
@@ -34,70 +35,55 @@ export function displayLaps(coordinates) {
     }
 
     // minimum 2 laps
-    const finalLaps = [];
-    possibleLaps = [possibleLaps.filter(l => turf.length(turf.lineString(l.lap)) < 10)[0]];
     for (const possibleLap of possibleLaps) {
-        let lapCount = 1;
-
         let i = possibleLap.nextLapStartIndex;
 
-        let prevOnLap = 0;
+        lapLoop:
+        while (i < coordinates.length - 1) {
+            const doubleLap = possibleLap.lap.concat(possibleLap.lap);
+            let pointOnLapIndex = 0;
+            let skipped = false;
+            while (pointOnLapIndex < possibleLap.lap.length - 1 && i < coordinates.length - 1) {
+                const lapLinePoints = [doubleLap[pointOnLapIndex], doubleLap[pointOnLapIndex + 1]];
+                const lapLine = turf.lineString(lapLinePoints);
 
-        const lap = turf.lineString(possibleLap.lap);
-        const doubleLap = possibleLap.lap.concat(possibleLap.lap);
+                const matchLinePoints = [coordinates[i], coordinates[i + 1]];
+                const matchLine = turf.lineString(matchLinePoints);
 
-        let curWrongDist = 0;
-        while (i < coordinates.length) {
+                const coordFrontMatch = turf.pointToLineDistance(turf.point(coordinates[i + 1]), lapLine) <= maxDistance;
+                const coordBackMatch = turf.pointToLineDistance(turf.point(coordinates[i]), lapLine) <= maxDistance;
+                const lapFrontMatch = turf.pointToLineDistance(doubleLap[pointOnLapIndex + 1], matchLine) <= maxDistance;
+                const lapBackMatch = turf.pointToLineDistance(doubleLap[pointOnLapIndex], matchLine) <= maxDistance;
 
-            let match = false;
+                if (lapFrontMatch && !lapBackMatch) {
+                    ++pointOnLapIndex;
+                } else if (coordFrontMatch && !coordBackMatch) {
+                    ++i;
+                } else if (coordFrontMatch && coordBackMatch) {
+                    ++i;
+                } else if (lapFrontMatch && lapBackMatch) {
+                    ++pointOnLapIndex;
+                } else if (!coordFrontMatch && coordBackMatch) {
+                    ++pointOnLapIndex;
+                } else if (!lapFrontMatch && lapBackMatch) {
+                    ++i;
+                } else {
+                    if (skipped) {
+                        break lapLoop;
+                    }
 
-            let j = 0;
-            let checkDist = 0;
-            while (checkDist < maxDistance) {
-                const line = [doubleLap[prevOnLap + j], doubleLap[prevOnLap + j + 1]];
-                const dist = turf.pointToLineDistance(coordinates[i], turf.lineString(line));
+                    skipped = true;
+                    ++pointOnLapIndex;
 
-                if (dist < maxDistance) {
-                    prevOnLap += j;
-                    match = true;
-                    break;
+                    continue;
                 }
-
-                checkDist += turf.length(turf.lineString(line));
-
-                ++j
+                skipped = false;
             }
-
-            if (!match) {
-                const line = [coordinates[j - 1], coordinates[j]];
-                const dist = turf.length(turf.lineString(line));
-                curWrongDist += dist;
-
-                if (curWrongDist > maxWrongDist) {
-                    break;
-                }
-
-                ++prevOnLap;
-            } else {
-                curWrongDist = 0;
-            }
-
-            if (prevOnLap + 1 >= possibleLap.lap.length) {
-                prevOnLap -= possibleLap.lap.length;
-                prevOnLap = Math.max(0, prevOnLap);
-                ++lapCount;
-            }
-
-            ++i;
-        }
-
-        if (lapCount >= 2) {
-            finalLaps.push(possibleLap.lap);
+            ++possibleLap.lapCount;
         }
     }
 
-    for (let lap of finalLaps) {
-        lap.push(lap[0]);
-        addLineLayer(lap, 'purple', 5);
+    for (let possibleLap of possibleLaps.filter(p => p.lapCount >= 2)) {
+        addLineLayer(possibleLap.lap, 'purple', 5);
     }
 }
