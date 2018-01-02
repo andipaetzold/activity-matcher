@@ -5,9 +5,6 @@ import { addLineLayer, addPointLayer } from "./map.js";
 export function displayLaps(coordinates) {
     const maxDistance = optionsMaxDistanceForSimilarity();
 
-    let possibleLaps = [];
-
-    // find possible laps
     for (let lapStartIndex = 0; lapStartIndex < coordinates.length - 1; ++lapStartIndex) {
         const lap = [coordinates[lapStartIndex + 1]];
 
@@ -17,73 +14,70 @@ export function displayLaps(coordinates) {
             const p2 = coordinates[j];
 
             const result = turf.nearestPointOnLine(startLine, turf.point(p2));
-            if (lap.length >= 2 &&
-                result.properties.dist <= maxDistance &&
-                turf.length(turf.lineString(lap)) >= 0.25) {
+            if (result.properties.dist <= maxDistance && turf.length(turf.lineString(lap)) >= 0.25) {
                 lap.unshift(result.geometry.coordinates);
                 lap.push(result.geometry.coordinates);
-                possibleLaps.push({
-                    lap,
-                    nextLapStartIndex: j,
-                    lapCount: 1
-                });
+
+                if (detectLaps(lap, coordinates.slice(j)) >= 2) {
+                    addLineLayer(lap, 'purple', 5);
+                }
+
                 break;
             } else {
                 lap.push(p2);
             }
         }
     }
+}
 
-    // minimum 2 laps
-    for (const possibleLap of possibleLaps) {
-        let i = possibleLap.nextLapStartIndex;
+function detectLaps(lap, coordinates) {
+    const maxDistance = optionsMaxDistanceForSimilarity();
 
-        lapLoop:
-        while (i < coordinates.length - 1) {
-            const doubleLap = possibleLap.lap.concat(possibleLap.lap);
-            let pointOnLapIndex = 0;
-            let skipped = false;
-            while (pointOnLapIndex < possibleLap.lap.length - 1 && i < coordinates.length - 1) {
-                const lapLinePoints = [doubleLap[pointOnLapIndex], doubleLap[pointOnLapIndex + 1]];
-                const lapLine = turf.lineString(lapLinePoints);
+    let lapCount = 1;
 
-                const matchLinePoints = [coordinates[i], coordinates[i + 1]];
-                const matchLine = turf.lineString(matchLinePoints);
+    lapLoop:
+    for (let i = 0; i < coordinates.length - 1; ++i) {
+        const doubleLap = lap.concat(lap);
+        let pointOnLapIndex = 0;
+        let skipped = false;
+        while (pointOnLapIndex < lap.length - 1 && i < coordinates.length - 1) {
+            const lapLinePoints = [doubleLap[pointOnLapIndex], doubleLap[pointOnLapIndex + 1]];
+            const lapLine = turf.lineString(lapLinePoints);
 
-                const coordFrontMatch = turf.pointToLineDistance(turf.point(coordinates[i + 1]), lapLine) <= maxDistance;
-                const coordBackMatch = turf.pointToLineDistance(turf.point(coordinates[i]), lapLine) <= maxDistance;
-                const lapFrontMatch = turf.pointToLineDistance(doubleLap[pointOnLapIndex + 1], matchLine) <= maxDistance;
-                const lapBackMatch = turf.pointToLineDistance(doubleLap[pointOnLapIndex], matchLine) <= maxDistance;
+            const matchLinePoints = [coordinates[i], coordinates[i + 1]];
+            const matchLine = turf.lineString(matchLinePoints);
 
-                if (lapFrontMatch && !lapBackMatch) {
-                    ++pointOnLapIndex;
-                } else if (coordFrontMatch && !coordBackMatch) {
-                    ++i;
-                } else if (coordFrontMatch && coordBackMatch) {
-                    ++i;
-                } else if (lapFrontMatch && lapBackMatch) {
-                    ++pointOnLapIndex;
-                } else if (!coordFrontMatch && coordBackMatch) {
-                    ++pointOnLapIndex;
-                } else if (!lapFrontMatch && lapBackMatch) {
-                    ++i;
-                } else {
-                    if (skipped) {
-                        break lapLoop;
-                    }
+            const coordFrontMatch = turf.pointToLineDistance(turf.point(coordinates[i + 1]), lapLine) <= maxDistance;
+            const coordBackMatch = turf.pointToLineDistance(turf.point(coordinates[i]), lapLine) <= maxDistance;
+            const lapFrontMatch = turf.pointToLineDistance(doubleLap[pointOnLapIndex + 1], matchLine) <= maxDistance;
+            const lapBackMatch = turf.pointToLineDistance(doubleLap[pointOnLapIndex], matchLine) <= maxDistance;
 
-                    skipped = true;
-                    ++pointOnLapIndex;
-
-                    continue;
+            if (lapFrontMatch && !lapBackMatch) {
+                ++pointOnLapIndex;
+            } else if (coordFrontMatch && !coordBackMatch) {
+                ++i;
+            } else if (coordFrontMatch && coordBackMatch) {
+                ++i;
+            } else if (lapFrontMatch && lapBackMatch) {
+                ++pointOnLapIndex;
+            } else if (!coordFrontMatch && coordBackMatch) {
+                ++pointOnLapIndex;
+            } else if (!lapFrontMatch && lapBackMatch) {
+                ++i;
+            } else {
+                if (skipped) {
+                    break lapLoop;
                 }
-                skipped = false;
+
+                skipped = true;
+                ++pointOnLapIndex;
+
+                continue;
             }
-            ++possibleLap.lapCount;
+            skipped = false;
         }
+        ++lapCount;
     }
 
-    for (let possibleLap of possibleLaps.filter(p => p.lapCount >= 2)) {
-        addLineLayer(possibleLap.lap, 'purple', 5);
-    }
+    return lapCount;
 }
