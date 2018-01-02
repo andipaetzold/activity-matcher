@@ -196,6 +196,7 @@ export class ActivityLoader {
         buttonDisplay.innerText = "Display";
         buttonDisplay.type = "button";
         buttonDisplay.classList.add('btn');
+        buttonDisplay.classList.add('btn-sm');
         buttonDisplay.addEventListener('click', async () => {
             if (buttonDisplay.classList.contains('btn-primary')) {
                 buttonDisplay.classList.remove('btn-primary');

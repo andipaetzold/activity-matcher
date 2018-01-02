@@ -19,7 +19,7 @@ body {
 #activities {
     position: absolute;
     width: 100vw;
-    height: 50vh;
+    height: 25vh;
     background-color: white;
     overflow-y: auto;
 
@@ -30,7 +30,7 @@ body {
 }
 
 #activities.visible {
-    top: 50vh;
+    top: 75vh;
     transition: top 500ms;
 }
 
