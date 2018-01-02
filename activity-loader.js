@@ -59,76 +59,40 @@ export class ActivityLoader {
         }
     }
 
-    async loadAltitude(activityId) {
-        const docRef = this.activityRef(activityId).collection('data').doc('altitude');
+    async loadDoc(activityId, docId) {
+        const docRef = this.activityRef(activityId).collection('data').doc(docId);
         const doc = await docRef.get();
 
         if (doc.exists) {
             return data.data();
         } else {
             await this.loadAllData(activityId);
-            return this.loadALtitude(activityId);
+            return this.loadDoc(activityId, docId);
         }
+    }
+
+    async loadAltitude(activityId) {
+        return await loadDoc(activityId, 'altitude');
     }
 
     async loadVelocity(activityId) {
-        const docRef = this.activityRef(activityId).collection('data').doc('velocity');
-        const doc = await docRef.get();
-
-        if (doc.exists) {
-            return doc.data();
-        } else {
-            await this.loadAllData(activityId);
-            return this.loadVelocity(activityId);
-        }
+        return await loadDoc(activityId, 'velocity');
     }
 
     async loadHeartrate(activityId) {
-        const docRef = this.activityRef(activityId).collection('data').doc('heartrate');
-        const doc = await docRef.get();
-
-        if (doc.exists) {
-            return doc.data();
-        } else {
-            await this.loadAllData(activityId);
-            return this.loadHeartrate(activityId);
-        }
+        return await loadDoc(activityId, 'heartrate');
     }
 
     async loadTime(activityId) {
-        const docRef = this.activityRef(activityId).collection('data').doc('time');
-        const doc = await docRef.get();
-
-        if (doc.exists) {
-            return data.data();
-        } else {
-            await this.loadAllData(activityId);
-            return this.loadTime(activityId);
-        }
+        return await loadDoc(activityId, 'time');
     }
 
     async loadCoordinates(activityId) {
-        const docRef = this.activityRef(activityId).collection('data').doc('coordinates');
-        const doc = await docRef.get();
-
-        if (doc.exists) {
-            return doc.data().data.map(e => [e.lng, e.lat]);
-        } else {
-            await this.loadAllData(activityId);
-            return this.loadCoordinates(activityId);
-        }
+        return await loadDoc(activityId, 'coordinates');
     }
 
     async loadDistance(activityId) {
-        const docRef = this.activityRef(activityId).collection('data').doc('distance');
-        const doc = await docRef.get();
-
-        if (doc.exists) {
-            return doc.data();
-        } else {
-            await this.loadAllData(activityId);
-            return this.loadDistance(activityId);
-        }
+        return await loadDoc(activityId, 'distance');
     }
 
     async loadAllData(activityId) {
