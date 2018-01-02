@@ -4,6 +4,7 @@ import { initFirestore } from "./firebase.js";
 import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map.js";
 import { getRandomColor } from "./util.js";
 import { optionsMaxDistanceForSimilarity, optionsDrawCirclesAroundPoints, optionsCoordinateQuality, optionsCalculateLaps, optionsCalculateSimilarActivities, optionsFitToBounds } from "./options.js";
+import { showLoading, hideLoading } from "./loading.js";
 
 export class ActivityLoader {
     constructor(token) {
@@ -235,6 +236,8 @@ export class ActivityLoader {
     }
 
     async updateMap() {
+        showLoading();
+
         clearMap();
         await this.displayCirclesAroundPoints();
         await this.displayActivities();
@@ -243,5 +246,7 @@ export class ActivityLoader {
         if (optionsFitToBounds()) {
             fitToBounds();
         }
+
+        hideLoading();
     }
 }

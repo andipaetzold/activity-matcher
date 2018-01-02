@@ -46,3 +46,9 @@ body {
 #options > * {
     margin: 5px;
 }
+
+#loading {
+    position: absolute;
+    top: 1vh;
+    right: 1vw;
+}
