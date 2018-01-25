@@ -1,20 +1,19 @@
-import { SimilarityCalculator } from "./similarity-calculator.js";
-import { displayLaps } from "./lap-calculator.js";
-import { initFirestore } from "./firebase.js";
-import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map.js";
-import { getRandomColor } from "./util.js";
-import { optionsMaxDistanceForSimilarity, optionsDrawCirclesAroundPoints, optionsCoordinateQuality, optionsCalculateLaps, optionsCalculateSimilarActivities, optionsFitToBounds } from "./options.js";
-import { showLoading, hideLoading } from "./loading.js";
+import * as polyline from '@mapbox/polyline';
+
+import { SimilarityCalculator } from "./similarity-calculator";
+import { displayLaps } from "./lap-calculator";
+import { initFirestore } from "./firebase";
+import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPointsLayer } from "./map";
+import { getRandomColor } from "./util";
+import { optionsMaxDistanceForSimilarity, optionsDrawCirclesAroundPoints, optionsCoordinateQuality, optionsCalculateLaps, optionsCalculateSimilarActivities, optionsFitToBounds } from "./options";
+import { showLoading, hideLoading } from "./loading";
 
 export class ActivityLoader {
-    constructor(token) {
-        this.token = token;
+    private visibleActivities: number[] = [];
+    private similarityCalculator: SimilarityCalculator = new SimilarityCalculator();
+    private firestore = initFirestore();
 
-        this.firestore = initFirestore();
-
-        this.similarityCalculator = new SimilarityCalculator();
-
-        this.visibleActivities = [];
+    constructor(private token: any) {
     }
 
     async loadActivities() {
@@ -103,26 +102,26 @@ export class ActivityLoader {
         const TIME_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/time?access_token=${this.token.access_token}`;
         const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/latlng?access_token=${this.token.access_token}`;
 
-        let responses = [
+        let responses: Promise<Response>[] = [
             fetch(ALTITUDE_URI),
             fetch(HEARTRATE_URI),
             fetch(LATLNG_URI),
             fetch(TIME_URI),
             fetch(VELOCITY_URI),
         ];
-        responses = await Promise.all(responses);
-        responses = await Promise.all(responses.map(response => response.json()));
-        responses = responses.reduce((a, b) => [...a, ...b], []);
+        const resolvedResponses = await Promise.all(responses);
+        let responsesData = await Promise.all(resolvedResponses.map(response => response.json()));
+        responsesData = responsesData.reduce((a, b) => [...a, ...b], []);
 
-        await this.activityRef(activityId).collection('data').doc('distance').set(responses.find(r => r.type === 'distance'));
-        await this.activityRef(activityId).collection('data').doc('altitude').set(responses.find(r => r.type === 'altitude'));
-        if (responses.find(r => r.type == 'heartrate')) {
-            await this.activityRef(activityId).collection('data').doc('heartrate').set(responses.find(r => r.type === 'heartrate'));
+        await this.activityRef(activityId).collection('data').doc('distance').set(responsesData.find(r => r.type === 'distance'));
+        await this.activityRef(activityId).collection('data').doc('altitude').set(responsesData.find(r => r.type === 'altitude'));
+        if (responsesData.find(r => r.type == 'heartrate')) {
+            await this.activityRef(activityId).collection('data').doc('heartrate').set(responsesData.find(r => r.type === 'heartrate'));
         }
-        await this.activityRef(activityId).collection('data').doc('time').set(responses.find(r => r.type === 'time'));
-        await this.activityRef(activityId).collection('data').doc('velocity').set(responses.find(r => r.type === 'velocity_smooth'));
+        await this.activityRef(activityId).collection('data').doc('time').set(responsesData.find(r => r.type === 'time'));
+        await this.activityRef(activityId).collection('data').doc('velocity').set(responsesData.find(r => r.type === 'velocity_smooth'));
 
-        const latlngResponse = responses.find(r => r.type === 'latlng');
+        const latlngResponse = responsesData.find(r => r.type === 'latlng');
         latlngResponse.data = latlngResponse.data.map(e => ({ lat: e[0], lng: e[1] }));
         await this.activityRef(activityId).collection('data').doc('coordinates').set(latlngResponse);
     }
@@ -182,7 +181,7 @@ export class ActivityLoader {
         row.appendChild(cellCommute);
         row.appendChild(cellDisplay);
 
-        document.getElementById('activity-table').prepend(row);
+        document.getElementById('activity-table').insertBefore(row, document.getElementById('activity-table').childNodes[0]);
     }
 
     async getCoordinates(activityId) {

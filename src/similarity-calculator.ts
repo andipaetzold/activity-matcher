@@ -1,5 +1,7 @@
-import { addMultipleLineLayer } from "./map.js";
-import { optionsMaxDistanceForSimilarity } from "./options.js";
+import * as turf from '@turf/turf';
+
+import { addMultipleLineLayer } from "./map";
+import { optionsMaxDistanceForSimilarity } from "./options";
 
 export class SimilarityCalculator {
     addLine(p1, p2) {

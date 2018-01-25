@@ -1,3 +1,6 @@
+import * as turf from '@turf/turf';
+import * as mapboxgl from 'mapbox-gl';
+
 let map;
 
 let id = 1;
@@ -61,7 +64,7 @@ export function addMultipleLineLayer(coordinates, color, width) {
     });
 }
 
-export function addPointLayer(coordinates, color, radius) {
+export function addPointLayer(coordinates, color, radius?: number) {
     addLayer({
         "type": "circle",
         "source": {

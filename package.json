@@ -1,0 +1,34 @@
+{
+  "name": "activity-matcher",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andipaetzold/activity-matcher.git"
+  },
+  "author": "Andreas Pätzold",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/andipaetzold/activity-matcher/issues"
+  },
+  "homepage": "https://activity-matcher.andipaetzold.com",
+  "dependencies": {
+    "@mapbox/polyline": "^0.2.0",
+    "@turf/turf": "^5.1.6",
+    "bootstrap": "^4.0.0",
+    "firebase": "^4.9.0",
+    "mapbox-gl": "^0.43.0"
+  },
+  "devDependencies": {
+    "@types/mapbox-gl": "^0.43.1",
+    "@types/polyline": "^0.1.28",
+    "awesome-typescript-loader": "^3.4.1",
+    "copy-webpack-plugin": "^4.3.1",
+    "css-loader": "^0.28.9",
+    "style-loader": "^0.19.1",
+    "typescript": "^2.6.2",
+    "webpack": "^3.10.0",
+    "webpack-dev-server": "^2.11.1"
+  }
+}

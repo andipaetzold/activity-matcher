@@ -1,6 +1,8 @@
-import { splitLine, getRandomColor } from "./util.js";
-import { optionsMaxDistanceForSimilarity } from "./options.js";
-import { addLineLayer, addPointLayer } from "./map.js";
+import * as turf from '@turf/turf';
+
+import { getRandomColor } from "./util";
+import { optionsMaxDistanceForSimilarity } from "./options";
+import { addLineLayer, addPointLayer } from "./map";
 
 export function displayLaps(coordinates) {
     const maxDistance = optionsMaxDistanceForSimilarity();
@@ -12,6 +14,7 @@ export function displayLaps(coordinates) {
 
         for (let j = lapStartIndex + 1; j < coordinates.length; ++j) {
             const p2 = coordinates[j];
+
             const result = turf.nearestPointOnLine(startLine, turf.point(p2));
 
             if (lap.length >= 2 && result.properties.dist <= maxDistance && turf.length(turf.lineString(lap)) >= 0.25) {

@@ -1,10 +1,11 @@
-import { ActivityLoader } from "./activity-loader.js";
-import { fetchToken, getAuthCode } from "./strava-auth.js";
-import { getParameterByName } from "./util.js";
-import { initMap } from "./map.js";
-import { hideLoading } from "./loading.js";
+import { ActivityLoader } from "./activity-loader";
+import { fetchToken, getAuthCode } from "./strava-auth";
+import { getParameterByName } from "./util";
+import { initMap } from "./map";
+import { hideLoading } from "./loading";
+import * as mapboxgl from 'mapbox-gl';
 
-mapboxgl.accessToken = 'pk.eyJ1IjoiYW5kaXBhZXR6b2xkIiwiYSI6ImNqOWgyY2F5NjBnNnAyeXBodzByemRsbWoifQ.wW4aCiUFv2PLhGB2S75sNg';
+(<any>mapboxgl).accessToken = 'pk.eyJ1IjoiYW5kaXBhZXR6b2xkIiwiYSI6ImNqOWgyY2F5NjBnNnAyeXBodzByemRsbWoifQ.wW4aCiUFv2PLhGB2S75sNg';
 
 document.addEventListener('DOMContentLoaded', async () => {
     initMap();

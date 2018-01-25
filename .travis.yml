@@ -1,0 +1,15 @@
+language: node_js
+node_js:
+  - "node"
+
+before_script:
+  - npm install -g webpack@latest
+
+script:
+  - npm install -g firebase-tools@latest
+  - npm install -g webpack@latest
+  - npm install
+  - webpack
+
+after_success:
+  - firebase deploy --token $FIREBASE_TOKEN --only hosting

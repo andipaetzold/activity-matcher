@@ -1,3 +1,6 @@
+@import '~bootstrap/dist/css/bootstrap.css';
+@import '~mapbox-gl/dist/mapbox-gl.css';
+
 body {
     overflow: hidden;
 }
