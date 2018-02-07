@@ -14,11 +14,11 @@
   },
   "homepage": "https://activity-matcher.andipaetzold.com",
   "dependencies": {
-    "@mapbox/polyline": "^0.2.0",
     "@turf/turf": "^5.1.6",
     "bootstrap": "^4.0.0",
     "firebase": "^4.9.0",
-    "mapbox-gl": "^0.43.0"
+    "mapbox-gl": "^0.43.0",
+    "polyline": "^0.2.0"
   },
   "devDependencies": {
     "@types/mapbox-gl": "^0.43.1",

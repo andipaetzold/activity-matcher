@@ -1,4 +1,7 @@
-import * as polyline from '@mapbox/polyline';
+import * as polyline from 'polyline';
+import * as firebase from 'firebase/app';
+import { Position } from "@turf/turf";
+import 'firebase/firestore';
 
 import { SimilarityCalculator } from "./similarity-calculator";
 import { displayLaps } from "./lap-calculator";
@@ -7,6 +10,8 @@ import { fitToBounds, clearMap, addLineLayer, addPointLayer, addCircleAroudPoint
 import { getRandomColor } from "./util";
 import { optionsMaxDistanceForSimilarity, optionsDrawCirclesAroundPoints, optionsCoordinateQuality, optionsCalculateLaps, optionsCalculateSimilarActivities, optionsFitToBounds } from "./options";
 import { showLoading, hideLoading } from "./loading";
+import { Coordinate } from "./domain/Coordinate";
+import { Activity } from "./domain/Activity";
 
 export class ActivityLoader {
     private visibleActivities: number[] = [];
@@ -24,31 +29,31 @@ export class ActivityLoader {
             .onSnapshot(snap => {
                 this.clearActivityTable();
                 snap.docChanges.forEach(change => {
-                    this.addActivityToTable(change.doc.data());
+                    this.addActivityToTable(<Activity>change.doc.data());
                 });
             });
 
         const ACTIVITIES_URI = `https://www.strava.com/api/v3/athlete/activities?access_token=${this.token.access_token}`;
         let activities = await fetch(ACTIVITIES_URI).then(response => response.json());
-        activities = activities.filter(activity => !!activity.map.summary_polyline);
+        activities = activities.filter((activity: any) => !!activity.map.summary_polyline);
 
         for (let activity of activities) {
             this.loadActivity(activity.id);
         }
     }
 
-    activityRef(activityId) {
+    activityRef(activityId: number) {
         return this.firestore.collection('athletes').doc(this.token.athlete.id.toString()).collection('activities').doc(activityId.toString());
     }
 
-    async loadActivity(activityId) {
+    async loadActivity(activityId: number) {
         const docRef = this.activityRef(activityId);
         const doc = await docRef.get();
         if (doc.exists) {
             const docData = doc.data();
 
-            docData.map.polyline = polyline.decode(docData.map.polyline).map(coord => [coord[1], coord[0]]);
-            docData.map.summary_polyline = polyline.decode(docData.map.summary_polyline).map(coord => [coord[1], coord[0]]);
+            docData.map.polyline = polyline.decode(docData.map.polyline).map((coord: Position): Position => [coord[1], coord[0]]);
+            docData.map.summary_polyline = polyline.decode(docData.map.summary_polyline).map((coord: Position): Position => [coord[1], coord[0]]);
 
             return docData;
         } else {
@@ -59,7 +64,7 @@ export class ActivityLoader {
         }
     }
 
-    async loadDoc(activityId, docId) {
+    async loadDoc(activityId: number, docId: string): Promise<firebase.firestore.DocumentData> {
         const docRef = this.activityRef(activityId).collection('data').doc(docId);
         const doc = await docRef.get();
 
@@ -71,31 +76,31 @@ export class ActivityLoader {
         }
     }
 
-    async loadAltitude(activityId) {
+    async loadAltitude(activityId: number) {
         return await this.loadDoc(activityId, 'altitude');
     }
 
-    async loadVelocity(activityId) {
+    async loadVelocity(activityId: number) {
         return await this.loadDoc(activityId, 'velocity');
     }
 
-    async loadHeartrate(activityId) {
+    async loadHeartrate(activityId: number) {
         return await this.loadDoc(activityId, 'heartrate');
     }
 
-    async loadTime(activityId) {
+    async loadTime(activityId: number) {
         return await this.loadDoc(activityId, 'time');
     }
 
-    async loadCoordinates(activityId) {
+    async loadCoordinates(activityId: number) {
         return await this.loadDoc(activityId, 'coordinates');
     }
 
-    async loadDistance(activityId) {
+    async loadDistance(activityId: number) {
         return await this.loadDoc(activityId, 'distance');
     }
 
-    async loadAllData(activityId) {
+    async loadAllData(activityId: number) {
         const ALTITUDE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/altitude?access_token=${this.token.access_token}`;
         const VELOCITY_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/velocity_smooth?access_token=${this.token.access_token}`;
         const HEARTRATE_URI = `https://www.strava.com/api/v3/activities/${activityId}/streams/heartrate?access_token=${this.token.access_token}`;
@@ -122,7 +127,7 @@ export class ActivityLoader {
         await this.activityRef(activityId).collection('data').doc('velocity').set(responsesData.find(r => r.type === 'velocity_smooth'));
 
         const latlngResponse = responsesData.find(r => r.type === 'latlng');
-        latlngResponse.data = latlngResponse.data.map(e => ({ lat: e[0], lng: e[1] }));
+        latlngResponse.data = latlngResponse.data.map((e: Position): Coordinate => ({ lat: e[0], lng: e[1] }));
         await this.activityRef(activityId).collection('data').doc('coordinates').set(latlngResponse);
     }
 
@@ -133,7 +138,7 @@ export class ActivityLoader {
         }
     }
 
-    addActivityToTable(activity) {
+    addActivityToTable(activity: Activity) {
         if (!activity) {
             return;
         }
@@ -184,7 +189,7 @@ export class ActivityLoader {
         document.getElementById('activity-table').insertBefore(row, document.getElementById('activity-table').childNodes[0]);
     }
 
-    async getCoordinates(activityId) {
+    async getCoordinates(activityId: number) {
         let activity;
         switch (optionsCoordinateQuality()) {
             case 1:
@@ -195,7 +200,7 @@ export class ActivityLoader {
                 return activity.map.polyline;
             case 3:
                 const coordinateData = await this.loadCoordinates(activityId);
-                return coordinateData.data.map(coord => [coord.lng, coord.lat]);
+                return coordinateData.data.map((coord: Coordinate): Position => [coord.lng, coord.lat]);
         }
     }
 

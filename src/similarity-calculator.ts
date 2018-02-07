@@ -1,13 +1,11 @@
 import * as turf from '@turf/turf';
+import { Position } from '@turf/turf';
 
 import { addMultipleLineLayer } from "./map";
 import { optionsMaxDistanceForSimilarity } from "./options";
 
 export class SimilarityCalculator {
-    addLine(p1, p2) {
-    }
-
-    getLines(coordinates) {
+    getLines(coordinates: Position[]) {
         const lines = [];
         for (let i = 1; i < coordinates.length; ++i) {
             lines.push({
@@ -18,17 +16,17 @@ export class SimilarityCalculator {
         return lines;
     }
 
-    drawSimilarLines(routes) {
+    drawSimilarLines(routes: Position[][]) {
         const maxDistance = optionsMaxDistanceForSimilarity();
 
         if (routes.length != 2) {
             return;
         }
 
-        routes = routes.map(coordinates => coordinates.map(point => turf.point(point)));
+        const routesWithPoints = routes.map(coordinates => coordinates.map(point => turf.point(point)));
 
-        const route1 = routes[0];
-        const route2 = routes[1];
+        const route1 = routesWithPoints[0];
+        const route2 = routesWithPoints[1];
 
         const usedRoute2 = new Set();
 

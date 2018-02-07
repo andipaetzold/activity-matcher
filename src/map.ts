@@ -1,10 +1,11 @@
 import * as turf from '@turf/turf';
 import * as mapboxgl from 'mapbox-gl';
+import { Position, Feature, Polygon, LineString, MultiPolygon, Point } from '@turf/turf';
 
-let map;
+let map: mapboxgl.Map;
 
 let id = 1;
-let layers = [];
+let layers: number[] = [];
 
 export function initMap() {
     map = new mapboxgl.Map({
@@ -21,15 +22,16 @@ export function clearMap() {
     layers = [];
 }
 
-export function addLayer(layer) {
+export function addLayer(layer: mapboxgl.Layer) {
     layers.push(id);
     layer.id = `layer-${id}`;
     map.addLayer(layer);
     ++id;
 }
 
-export function addLineLayer(coordinates, color, width) {
+export function addLineLayer(coordinates: Position[], color: string, width?: number) {
     addLayer({
+        "id": null,
         "type": "line",
         "source": {
             "type": "geojson",
@@ -46,12 +48,16 @@ export function addLineLayer(coordinates, color, width) {
     });
 }
 
-export function addMultipleLineLayer(coordinates, color, width) {
+export function addMultipleLineLayer(coordinates: Position[][], color: string, width?: number) {
+    const lineStringRoutes = coordinates.map(route => turf.lineString(route));
+    const featureCollection = turf.featureCollection(lineStringRoutes);
+
     addLayer({
+        "id": null,
         "type": "line",
         "source": {
             "type": "geojson",
-            "data": turf.featureCollection(coordinates.map(route => turf.lineString(route))),
+            "data": <any>featureCollection,
         },
         "layout": {
             "line-join": "round",
@@ -64,8 +70,9 @@ export function addMultipleLineLayer(coordinates, color, width) {
     });
 }
 
-export function addPointLayer(coordinates, color, radius?: number) {
+export function addPointLayer(coordinates: Position, color: string, radius?: number) {
     addLayer({
+        "id": null,
         "type": "circle",
         "source": {
             "type": "geojson",
@@ -78,15 +85,17 @@ export function addPointLayer(coordinates, color, radius?: number) {
     });
 }
 
-export function addCircleAroudPointsLayer(coordinates, borderColor, fillColor, radius) {
+export function addCircleAroudPointsLayer(coordinates: Position[], borderColor: string, fillColor: string, radius?: number) {
     const data = coordinates.map(coord => turf.circle(coord, radius));
 
-    let polygon = data[0];
+    let polygon: Feature<Polygon> = null;
     for (let i = 1; i < data.length; ++i) {
-        polygon = turf.union(polygon, data[i]);
+        const prev = polygon == null ? data[0] : polygon;
+        polygon = <Feature<Polygon>>turf.union(prev, data[i]);
     }
 
     addLayer({
+        "id": null,
         "type": "fill",
         "source": {
             "type": "geojson",
@@ -99,6 +108,7 @@ export function addCircleAroudPointsLayer(coordinates, borderColor, fillColor, r
     });
 
     addLayer({
+        "id": null,
         "type": "line",
         "source": {
             "type": "geojson",
@@ -111,7 +121,7 @@ export function addCircleAroudPointsLayer(coordinates, borderColor, fillColor, r
     });
 }
 
-function getFeatureCoordinates(feature) {
+function getFeatureCoordinates(feature: Feature<LineString | MultiPolygon | Point | Polygon>) {
     switch (feature.geometry.type) {
         case 'MultiPolygon':
             return [].concat.apply([], feature.geometry.coordinates.map(c => c[0]));
@@ -130,7 +140,7 @@ function getFeatureCoordinates(feature) {
             return coordinates;
 
         default:
-            console.error('Unknown feature type', feature.geometry.type);
+            console.error('Unknown feature type', (<any>feature).geometry.type);
             return [];
     }
 }
@@ -142,7 +152,7 @@ export function fitToBounds() {
 
     const coordinates = [];
     for (let id of layers) {
-        const data = map.getSource(`layer-${id}`)._data;
+        const data = (<any>map.getSource(`layer-${id}`))._data;
         if (data.type == 'Feature') {
             coordinates.push(...getFeatureCoordinates(data));
         } else {

@@ -1,10 +1,11 @@
 import * as turf from '@turf/turf';
+import { Position } from "@turf/turf";
 
 import { getRandomColor } from "./util";
 import { optionsMaxDistanceForSimilarity } from "./options";
 import { addLineLayer, addPointLayer } from "./map";
 
-export function displayLaps(coordinates) {
+export function displayLaps(coordinates: Position[]) {
     const maxDistance = optionsMaxDistanceForSimilarity();
 
     for (let lapStartIndex = 0; lapStartIndex < coordinates.length - 1; ++lapStartIndex) {
@@ -33,7 +34,7 @@ export function displayLaps(coordinates) {
     }
 }
 
-function detectLaps(lap, coordinates) {
+function detectLaps(lap: Position[], coordinates: Position[]) {
     const maxDistance = optionsMaxDistanceForSimilarity();
 
     let lapCount = 1;
