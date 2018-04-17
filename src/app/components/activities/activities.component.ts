@@ -1,16 +1,15 @@
-import { Component, OnInit, ChangeDetectorRef } from "@angular/core";
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from "@angular/core";
 import { AngularFirestore } from "angularfire2/firestore";
 import { StravaAuthService } from "../../services/strava-auth.service";
 import { Observable } from "rxjs/Observable";
 import { HttpClient } from "@angular/common/http";
 import { PageEvent } from "@angular/material/paginator";
-
 @Component({
     selector: 'app-activities',
     templateUrl: './activities.component.html'
 })
 export class ActivitiesComponent implements OnInit {
-    public displayedColumns = ['name', 'date', 'distance', 'duration', 'selection'];
+    public displayedColumns = ['name', 'date', 'distance', 'duration', 'link'];
     public activities: any[] = [];
     public displayedActivities: any[] = [];
 
@@ -43,13 +42,5 @@ export class ActivitiesComponent implements OnInit {
 
     public pageChanged(event: PageEvent) {
         this.displayedActivities = this.activities.slice(event.pageIndex * event.pageSize, (event.pageIndex + 1) * event.pageSize);
-    }
-
-    public set selectedActivity(activity: any) {
-        this._selectedActivity = activity;
-    }
-
-    public get selectedActivity(): any {
-        return this._selectedActivity;
     }
 }

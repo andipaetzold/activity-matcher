@@ -28,10 +28,10 @@
                 <mat-cell *matCellDef="let activity">{{ (activity.elapsed_time / 60) | floor }} min</mat-cell>
             </ng-container>
 
-            <ng-container matColumnDef="selection">
-                <mat-header-cell *matHeaderCellDef>Selection</mat-header-cell>
+            <ng-container matColumnDef="link">
+                <mat-header-cell *matHeaderCellDef>Link</mat-header-cell>
                 <mat-cell *matCellDef="let activity">
-                    <button mat-button (click)="selectedActivity = activity" [disabled]="selectedActivity == activity">Select</button>
+                    <a mat-button href="https://www.strava.com/activities/{{ activity.id }}" target="_blank">Show</a>
                 </mat-cell>
             </ng-container>
 
