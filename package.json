@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.html",
+  "scripts": {
+    "build:dev": "node_modules/.bin/ng build --dev",
+    "build:prod": "node_modules/.bin/ng build --prod",
+    "serve:dev": "node_modules/.bin/ng serve --ssl --dev",
+    "serve:prod": "node_modules/.bin/ng serve --ssl --prod"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/andipaetzold/activity-matcher.git"
@@ -14,21 +20,33 @@
   },
   "homepage": "https://activity-matcher.andipaetzold.com",
   "dependencies": {
+    "@angular/animations": "^5.2.10",
+    "@angular/cdk": "^5.2.4",
+    "@angular/common": "^5.2.10",
+    "@angular/compiler": "^5.2.10",
+    "@angular/core": "^5.2.10",
+    "@angular/forms": "^5.2.10",
+    "@angular/http": "^5.2.10",
+    "@angular/material": "^5.2.4",
+    "@angular/platform-browser": "^5.2.10",
+    "@angular/platform-browser-dynamic": "^5.2.10",
+    "@angular/router": "^5.2.10",
     "@turf/turf": "^5.1.6",
-    "bootstrap": "^4.0.0",
-    "firebase": "^4.9.0",
-    "mapbox-gl": "^0.43.0",
-    "polyline": "^0.2.0"
+    "angularfire2": "^5.0.0-rc.6.0",
+    "core-js": "^2.5.5",
+    "firebase": "^4.12.1",
+    "mapbox-gl": "^0.44.2",
+    "polyline": "^0.2.0",
+    "rxjs": "^5.5.10",
+    "zone.js": "^0.8.26"
   },
   "devDependencies": {
-    "@types/mapbox-gl": "^0.43.1",
+    "@angular/cli": "^1.7.4",
+    "@angular/compiler-cli": "^5.2.10",
+    "@angular/language-service": "^5.2.10",
+    "@types/mapbox-gl": "^0.44.2",
     "@types/polyline": "^0.1.28",
-    "awesome-typescript-loader": "^3.4.1",
-    "copy-webpack-plugin": "^4.3.1",
-    "css-loader": "^0.28.9",
-    "style-loader": "^0.19.1",
-    "typescript": "^2.6.2",
-    "webpack": "^3.10.0",
-    "webpack-dev-server": "^2.11.1"
+    "tslint": "^5.9.1",
+    "typescript": "^2.8.1"
   }
 }

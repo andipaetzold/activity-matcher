@@ -1,5 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="de">
 
 <head>
     <meta charset="UTF-8">
@@ -7,74 +7,11 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Activity Matcher</title>
 
-    <script rel="stylesheet" src="script.js"></script>
-    <script rel="stylesheet" src="style.js"></script>
+    <base href="/">
 </head>
 
-<body style="margin: 0; padding: 0; height: 100vh">
-    <div id="map"></div>
-
-    <div id="auth">
-        <div class="text-center">
-            <h1 id="title">Activity Matcher</h1>
-            <a class="btn btn-primary btn-lg" href="https://www.strava.com/oauth/authorize?client_id=21035&amp;response_type=code&amp;redirect_uri=https://activity-matcher.andipaetzold.com/&amp;approval_prompt=force">
-                Authorize
-            </a>
-        </div>
-    </div>
-
-    <div id="loading">Loading...</div>
-
-    <div id="options">
-        <button id="activities-toggle" type="button" class="btn btn-sm">Show / Hide Activities</button>
-
-        <label>
-            <input id="options-fit-to-bounds" type="checkbox" checked> Fit to bounds
-        </label>
-
-        <label>
-            <input id="options-circles-around-points" type="checkbox"> Circles around points
-        </label>
-
-        <label>
-            <input id="options-distance-similarity" type="number" min="0.001" step="0.001" value="0.03"> Maximum distance for similarity
-        </label>
-
-        <label>
-            <input id="options-calculate-laps" type="checkbox"> Calculate laps
-        </label>
-
-        <label>
-            <input id="options-calculate-similar-activities" type="checkbox"> Calculate similar activities
-        </label>
-
-        <label>
-            <select id="options-coordinate-quality">
-                <option value="1">Summary Polygon</option>
-                <option value="2">Polygon</option>
-                <option value="3">Detailed</option>
-            </select>
-
-            Coordinate quality
-        </label>
-    </div>
-
-    <div id="activities">
-        <table class="table table-sm table-striped table-condensed">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Distance</th>
-                    <th>Duration</th>
-                    <th>Type</th>
-                    <th>Commute</th>
-                    <th>Display</th>
-                </tr>
-            </thead>
-            <tbody id="activity-table">
-            </tbody>
-        </table>
-    </div>
+<body>
+    <app-root></app-root>
 </body>
 
 </html>

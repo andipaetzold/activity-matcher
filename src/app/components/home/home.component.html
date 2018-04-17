@@ -1,0 +1,14 @@
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>Strava</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <a *ngIf="!(isLoggedIn() | async)" [href]="loginUrl" mat-raised-button>Login</a>
+        <button *ngIf="isLoggedIn() | async" (click)="logout()" mat-raised-button>Logout</button>
+    </mat-card-content>
+
+    <mat-card-content>
+        <button *ngIf="isLoggedIn() | async" (click)="load()" mat-raised-button>Load data</button>
+    </mat-card-content>
+</mat-card>

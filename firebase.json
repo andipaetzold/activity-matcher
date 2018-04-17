@@ -2,7 +2,7 @@
   "hosting": {
     "public": "dist",
     "ignore": [
-      "firebaseon",
+      "firebase.jon",
       "**/node_modules/**"
     ],
     "rewrites": [

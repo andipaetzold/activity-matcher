@@ -1,0 +1,37 @@
+{
+    "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+    "project": {
+        "name": "activity-matcher"
+    },
+    "apps": [
+        {
+            "name": "app",
+            "root": "src",
+            "outDir": "dist",
+            "index": "index.html",
+            "main": "main.ts",
+            "polyfills": "polyfills.ts",
+            "tsconfig": "tsconfig.json",
+            "serviceWorker": false,
+            "scripts": [],
+            "styles": [
+                "../node_modules/@angular/material/prebuilt-themes/indigo-pink.css"
+            ],
+            "environmentSource": "environments/environment.ts",
+            "environments": {
+                "dev": "environments/environment.ts",
+                "prod": "environments/environment.prod.ts"
+            }
+        }
+    ],
+    "lint": [
+        {
+            "project": "src/tsconfig.json",
+            "exclude": "**/node_modules/**"
+        }
+    ],
+    "defaults": {
+        "styleExt": "css",
+        "component": {}
+    }
+}
