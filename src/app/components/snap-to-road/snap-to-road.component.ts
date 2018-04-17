@@ -10,6 +10,7 @@ import { DetailedActivity } from "../../domain/DetailedActivity";
 import { DetailedAthlete } from "../../domain/DetailedAthlete";
 import { LatLng } from "../../domain/LatLng";
 import { Position } from 'geojson';
+import { StravaAPIService } from "../../services/strava-api.service";
 
 @Component({
     selector: 'app-snap-to-road',
@@ -26,6 +27,7 @@ export class SnapToRoadComponent implements OnInit {
         private readonly stravaAuthService: StravaAuthService,
         private readonly httpClient: HttpClient,
         private readonly firestore: AngularFirestore,
+        private readonly stravaAPIService: StravaAPIService,
     ) {
         this._selectedRoute = this._selectedActivity
             .filter(a => !!a)
@@ -35,12 +37,8 @@ export class SnapToRoadComponent implements OnInit {
     }
 
     public async ngOnInit(): Promise<void> {
-        this.token = await this.stravaAuthService.getAuthToken();
-
-        if (this.token) {
-            const athlete = await this.httpClient.get<DetailedAthlete>(`https://www.strava.com/api/v3/athlete?access_token=${this.token}`).toPromise();
-            this.activities = await this.firestore.collection('athletes').doc(String(athlete.id)).collection<DetailedActivity>('activities').valueChanges().take(1).toPromise();
-        }
+        const athlete = await this.stravaAPIService.getAthlete();
+        this.activities = await this.firestore.collection('athletes').doc(String(athlete.id)).collection<DetailedActivity>('activities').valueChanges().take(1).toPromise();
     }
 
     public set selectedActivity(activity: DetailedActivity) {

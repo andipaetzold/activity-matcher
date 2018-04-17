@@ -24,6 +24,7 @@ import { AngularFirestoreModule } from 'angularfire2/firestore';
 import { ActivitiesComponent } from './components/activities/activities.component';
 import { SnapToRoadComponent } from './components/snap-to-road/snap-to-road.component';
 import { MapComponent } from './components/map/map.component';
+import { StravaAPIService } from './services/strava-api.service';
 
 @NgModule({
     declarations: [
@@ -37,6 +38,7 @@ import { MapComponent } from './components/map/map.component';
     providers: [
         ActivityLoaderService,
         StravaAuthService,
+        StravaAPIService,
     ],
     imports: [
         AppRoutingModule,

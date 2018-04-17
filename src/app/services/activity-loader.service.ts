@@ -5,6 +5,7 @@ import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection 
 import { DetailedAthlete } from "../domain/DetailedAthlete";
 import { DetailedActivity } from "../domain/DetailedActivity";
 import { LatLng } from "../domain/LatLng";
+import { StravaAPIService } from "./strava-api.service";
 
 @Injectable()
 export class ActivityLoaderService {
@@ -12,66 +13,53 @@ export class ActivityLoaderService {
         private readonly stravaAuthService: StravaAuthService,
         private readonly httpClient: HttpClient,
         private readonly firestore: AngularFirestore,
+        private readonly stravaAPIService: StravaAPIService,
     ) {
     }
 
     public async load() {
         const token = await this.stravaAuthService.getAuthToken();
 
-        await this.loadAthlete(token);
-        await this.loadActivities(token);
+        await this.loadAthlete();
+        await this.loadActivities();
     }
 
-    private async loadAthlete(token: string): Promise<void> {
-        const athlete = await this.httpClient.get<DetailedAthlete>(`https://www.strava.com/api/v3/athlete?access_token=${token}`).toPromise();
+    private async loadAthlete(): Promise<void> {
+        const athlete = await this.stravaAPIService.getAthlete();
         await this.firestore.collection('athletes').doc(String(athlete.id)).set(athlete);
     }
 
-    private async loadActivities(token: string): Promise<void> {
-        let activities = await this.httpClient.get<DetailedActivity[]>(`https://www.strava.com/api/v3/athlete/activities?access_token=${token}`).toPromise();
+    private async loadActivities(): Promise<void> {
+        let activities = await this.stravaAPIService.getActivities();
         activities = activities.filter(activity => !!activity.map.summary_polyline);
 
         for (const activity of activities) {
-            await this.loadActivity(token, activity);
-            await this.loadStreams(token, activity);
+            await this.loadActivity(activity);
+            await this.loadStreams(activity);
         }
     }
 
-    private async loadActivity(token: string, activity: DetailedActivity) {
+    private async loadActivity(activity: DetailedActivity) {
         const activityDoc = this.firestore.collection('athletes').doc(String(activity.athlete.id)).collection('activities').doc(String(activity.id));
-        activity = await this.httpClient.get<DetailedActivity>(`https://www.strava.com/api/v3/activities/${activity.id}?access_token=${token}`).toPromise();
+        activity = await this.stravaAPIService.getActivity(activity.id);
         activityDoc.set(activity);
     }
 
-    private async loadStreams(token: string, activity: DetailedActivity) {
+    private async loadStreams(activity: DetailedActivity): Promise<void> {
         const activityDoc = this.firestore.collection('athletes').doc(String(activity.athlete.id)).collection('activities').doc(String(activity.id));
         const dataDoc = activityDoc.collection('data');
 
-        const ALTITUDE_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams/altitude?access_token=${token}`;
-        const VELOCITY_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams/velocity_smooth?access_token=${token}`;
-        const HEARTRATE_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams/heartrate?access_token=${token}`;
-        const TIME_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams/time?access_token=${token}`;
-        const LATLNG_URI = `https://www.strava.com/api/v3/activities/${activity.id}/streams/latlng?access_token=${token}`;
+        await dataDoc.doc('altitude').set(await this.stravaAPIService.getAltitudeStream(activity.id));
 
-        let responses: Promise<any>[] = [
-            this.httpClient.get(ALTITUDE_URI).toPromise(),
-            this.httpClient.get(HEARTRATE_URI).toPromise(),
-            this.httpClient.get(LATLNG_URI).toPromise(),
-            this.httpClient.get(TIME_URI).toPromise(),
-            this.httpClient.get(VELOCITY_URI).toPromise(),
-        ];
-        let responsesData = await Promise.all(responses);
-        responsesData = responsesData.reduce((a, b) => [...a, ...b], []);
-
-        await dataDoc.doc('distance').set(responsesData.find(r => r.type === 'distance'));
-        await dataDoc.doc('altitude').set(responsesData.find(r => r.type === 'altitude'));
-        if (responsesData.find(r => r.type == 'heartrate')) {
-            await dataDoc.doc('heartrate').set(responsesData.find(r => r.type === 'heartrate'));
+        const heartrate = await this.stravaAPIService.getHeartRateStream(activity.id);
+        if (heartrate) {
+            await dataDoc.doc('heartrate').set(heartrate);
         }
-        await dataDoc.doc('time').set(responsesData.find(r => r.type === 'time'));
-        await dataDoc.doc('velocity').set(responsesData.find(r => r.type === 'velocity_smooth'));
 
-        const latlngResponse = responsesData.find(r => r.type === 'latlng');
+        await dataDoc.doc('time').set(await this.stravaAPIService.getTimeStream(activity.id));
+        await dataDoc.doc('velocity').set(await this.stravaAPIService.getVelocityStream(activity.id));
+
+        const latlngResponse: any = await this.stravaAPIService.getLatlngStream(activity.id);
         latlngResponse.data = latlngResponse.data.map((e: LatLng): any => ({ lat: e[0], lng: e[1] }));
         await dataDoc.doc('coordinates').set(latlngResponse);
     }
