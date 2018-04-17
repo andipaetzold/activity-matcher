@@ -11,6 +11,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { NgMathPipesModule } from 'angular-pipes';
 import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSelectModule } from '@angular/material/select';
 
 import { AppComponent } from 'app/app.component';
 import { AppRoutingModule } from 'app/app-routing.module';
@@ -21,6 +22,8 @@ import { StravaAuthService } from './services/strava-auth.service';
 import { ActivityLoaderService } from './services/activity-loader.service';
 import { AngularFirestoreModule } from 'angularfire2/firestore';
 import { ActivitiesComponent } from './components/activities/activities.component';
+import { SnapToRoadComponent } from './components/snap-to-road/snap-to-road.component';
+import { MapComponent } from './components/map/map.component';
 
 @NgModule({
     declarations: [
@@ -28,6 +31,8 @@ import { ActivitiesComponent } from './components/activities/activities.componen
         NavComponent,
         HomeComponent,
         ActivitiesComponent,
+        SnapToRoadComponent,
+        MapComponent,
     ],
     providers: [
         ActivityLoaderService,
@@ -47,6 +52,7 @@ import { ActivitiesComponent } from './components/activities/activities.componen
         MatCardModule,
         MatListModule,
         MatPaginatorModule,
+        MatSelectModule,
         MatSidenavModule,
         MatTableModule,
         MatToolbarModule,

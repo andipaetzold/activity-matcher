@@ -2,6 +2,9 @@ import { Injectable } from "@angular/core";
 import { StravaAuthService } from "./strava-auth.service";
 import { HttpClient } from "@angular/common/http";
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
+import { DetailedAthlete } from "../domain/DetailedAthlete";
+import { DetailedActivity } from "../domain/DetailedActivity";
+import { LatLng } from "../domain/LatLng";
 
 @Injectable()
 export class ActivityLoaderService {
@@ -20,27 +23,27 @@ export class ActivityLoaderService {
     }
 
     private async loadAthlete(token: string): Promise<void> {
-        const athlete: any = await this.httpClient.get(`https://www.strava.com/api/v3/athlete?access_token=${token}`).toPromise();
+        const athlete = await this.httpClient.get<DetailedAthlete>(`https://www.strava.com/api/v3/athlete?access_token=${token}`).toPromise();
         await this.firestore.collection('athletes').doc(String(athlete.id)).set(athlete);
     }
 
     private async loadActivities(token: string): Promise<void> {
-        let activities = <any[]>await this.httpClient.get(`https://www.strava.com/api/v3/athlete/activities?access_token=${token}`).toPromise();
-        activities = activities.filter((activity: any) => !!activity.map.summary_polyline);
+        let activities = await this.httpClient.get<DetailedActivity[]>(`https://www.strava.com/api/v3/athlete/activities?access_token=${token}`).toPromise();
+        activities = activities.filter(activity => !!activity.map.summary_polyline);
 
         for (const activity of activities) {
-            this.loadActivity(token, activity);
-            this.loadStreams(token, activity);
+            await this.loadActivity(token, activity);
+            await this.loadStreams(token, activity);
         }
     }
 
-    private async loadActivity(token: string, activity: any) {
+    private async loadActivity(token: string, activity: DetailedActivity) {
         const activityDoc = this.firestore.collection('athletes').doc(String(activity.athlete.id)).collection('activities').doc(String(activity.id));
-        activity = await this.httpClient.get(`https://www.strava.com/api/v3/activities/${activity.id}?access_token=${token}`).toPromise();
+        activity = await this.httpClient.get<DetailedActivity>(`https://www.strava.com/api/v3/activities/${activity.id}?access_token=${token}`).toPromise();
         activityDoc.set(activity);
     }
 
-    private async loadStreams(token: string, activity: any) {
+    private async loadStreams(token: string, activity: DetailedActivity) {
         const activityDoc = this.firestore.collection('athletes').doc(String(activity.athlete.id)).collection('activities').doc(String(activity.id));
         const dataDoc = activityDoc.collection('data');
 
@@ -69,7 +72,7 @@ export class ActivityLoaderService {
         await dataDoc.doc('velocity').set(responsesData.find(r => r.type === 'velocity_smooth'));
 
         const latlngResponse = responsesData.find(r => r.type === 'latlng');
-        latlngResponse.data = latlngResponse.data.map((e: number[]): any => ({ lat: e[0], lng: e[1] }));
+        latlngResponse.data = latlngResponse.data.map((e: LatLng): any => ({ lat: e[0], lng: e[1] }));
         await dataDoc.doc('coordinates').set(latlngResponse);
     }
 }
