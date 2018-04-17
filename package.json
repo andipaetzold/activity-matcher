@@ -32,6 +32,7 @@
     "@angular/platform-browser-dynamic": "^5.2.10",
     "@angular/router": "^5.2.10",
     "@turf/turf": "^5.1.6",
+    "angular-pipes": "^7.1.0",
     "angularfire2": "^5.0.0-rc.6.0",
     "core-js": "^2.5.5",
     "firebase": "^4.12.1",

@@ -8,6 +8,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { AngularFireModule } from 'angularfire2';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatTableModule } from '@angular/material/table';
+import { NgMathPipesModule } from 'angular-pipes';
+import { MatPaginatorModule } from '@angular/material/paginator';
 
 import { AppComponent } from 'app/app.component';
 import { AppRoutingModule } from 'app/app-routing.module';
@@ -17,12 +20,14 @@ import { NavComponent } from './components/nav/nav.component';
 import { StravaAuthService } from './services/strava-auth.service';
 import { ActivityLoaderService } from './services/activity-loader.service';
 import { AngularFirestoreModule } from 'angularfire2/firestore';
+import { ActivitiesComponent } from './components/activities/activities.component';
 
 @NgModule({
     declarations: [
         AppComponent,
         NavComponent,
         HomeComponent,
+        ActivitiesComponent,
     ],
     providers: [
         ActivityLoaderService,
@@ -41,10 +46,12 @@ import { AngularFirestoreModule } from 'angularfire2/firestore';
         MatButtonModule,
         MatCardModule,
         MatListModule,
+        MatPaginatorModule,
         MatSidenavModule,
+        MatTableModule,
         MatToolbarModule,
 
-        AngularFireModule.initializeApp(environment.firebase),
+        NgMathPipesModule,
     ],
     bootstrap: [AppComponent]
 })
