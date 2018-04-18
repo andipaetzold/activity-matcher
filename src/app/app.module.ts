@@ -25,6 +25,7 @@ import { ActivitiesComponent } from './components/activities/activities.componen
 import { SnapToRoadComponent } from './components/snap-to-road/snap-to-road.component';
 import { MapComponent } from './components/map/map.component';
 import { StravaAPIService } from './services/strava-api.service';
+import { SnapToRoadService } from 'app/services/snap-to-road.service';
 
 @NgModule({
     declarations: [
@@ -37,6 +38,7 @@ import { StravaAPIService } from './services/strava-api.service';
     ],
     providers: [
         ActivityLoaderService,
+        SnapToRoadService,
         StravaAuthService,
         StravaAPIService,
     ],
@@ -44,7 +46,7 @@ import { StravaAPIService } from './services/strava-api.service';
         AppRoutingModule,
 
         AngularFireModule.initializeApp(environment.firebase),
-        AngularFirestoreModule,
+        AngularFirestoreModule.enablePersistence(),
 
         BrowserModule,
         BrowserAnimationsModule,

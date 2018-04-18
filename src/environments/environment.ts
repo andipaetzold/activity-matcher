@@ -15,4 +15,7 @@ export const environment = {
     mapbox: {
         accessToken: 'pk.eyJ1IjoiYW5kaXBhZXR6b2xkIiwiYSI6ImNqOWgyY2F5NjBnNnAyeXBodzByemRsbWoifQ.wW4aCiUFv2PLhGB2S75sNg',
     },
+    googleMaps: {
+        key: 'AIzaSyB-fdWUHhDXoXikdPm5puhS0QD-j6HBWSo',
+    },
 };

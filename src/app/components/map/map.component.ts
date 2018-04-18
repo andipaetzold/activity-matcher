@@ -1,8 +1,9 @@
 import { Component, ViewChild, ElementRef, OnInit, Input } from "@angular/core";
-import { Map, LngLatBounds } from 'mapbox-gl';
+import { Map, LngLatBounds, LngLat } from 'mapbox-gl';
 import { lineString, Feature, LineString, MultiPolygon, Point, Polygon } from '@turf/helpers';
-import { LatLng } from '../../domain/LatLng';
 import { Position } from 'geojson';
+
+const colors = ['black', 'blue', 'red'];
 
 @Component({
     selector: 'app-map',
@@ -12,6 +13,7 @@ export class MapComponent implements OnInit {
     private lastLayerId = 1;
     private layers: number[] = [];
     private routes: Position[][];
+    private allPoints: Position[];
 
     @ViewChild('map')
     public mapContainer: ElementRef;
@@ -34,6 +36,7 @@ export class MapComponent implements OnInit {
             this.map.removeSource(`layer-${id}`);
         }
         this.layers = [];
+        this.allPoints = [];
     }
 
     private addLayer(layer: mapboxgl.Layer) {
@@ -47,13 +50,20 @@ export class MapComponent implements OnInit {
     public set routeInput(routes: Position[][]) {
         this.clear();
         this.routes = routes || [];
+
+        let colorId = 0;
+
         for (const route of this.routes) {
-            this.addLineLayer(route, 'black');
+            if (route.length >= 2) {
+                this.addLineLayer(route, colors[colorId++]);
+            }
         }
         this.fitToBounds();
     }
 
     public addLineLayer(coordinates: Position[], color: string, width?: number) {
+        this.allPoints.push.apply(this.allPoints, coordinates);
+
         this.addLayer({
             "id": null,
             "type": "line",
@@ -77,46 +87,10 @@ export class MapComponent implements OnInit {
             return;
         }
 
-        const coordinates = [];
-        for (let id of this.layers) {
-            const data = (<any>this.map.getSource(`layer-${id}`))._data;
-            if (data.type == 'Feature') {
-                coordinates.push(...this.getFeatureCoordinates(data));
-            } else {
-                for (let feature of data.features) {
-                    coordinates.push(...this.getFeatureCoordinates(feature));
-                }
-            }
-        }
 
-        const bounds = coordinates.reduce((bounds, coord) => bounds.extend(coord), new LngLatBounds(coordinates[0], coordinates[0]));
+        const bounds = this.allPoints.reduce((bounds, coord) => bounds.extend(new LngLat(coord[0], coord[1])), new LngLatBounds(this.allPoints[0], this.allPoints[0]));
         this.map.fitBounds(bounds, {
             padding: 50
         });
-    }
-
-
-    private getFeatureCoordinates(feature: Feature<LineString | MultiPolygon | Point | Polygon>) {
-        switch (feature.geometry.type) {
-            case 'MultiPolygon':
-                return [].concat.apply([], feature.geometry.coordinates.map((c: any) => c[0]));
-
-            case 'LineString':
-                return feature.geometry.coordinates;
-
-            case 'Point':
-                return [feature.geometry.coordinates];
-
-            case 'Polygon':
-                const coordinates = [];
-                for (let coords of feature.geometry.coordinates) {
-                    coordinates.push(...coords);
-                }
-                return coordinates;
-
-            default:
-                console.error('Unknown feature type', (<any>feature).geometry.type);
-                return [];
-        }
     }
 }
