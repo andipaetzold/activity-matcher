@@ -27,7 +27,13 @@ export class MapGoogleComponent implements OnInit {
         this.bounds = new google.maps.LatLngBounds();
         this.map = new google.maps.Map(this.mapContainer.nativeElement, {
             center: { lat: -34.397, lng: 150.644 },
-            zoom: 8
+            zoom: 8,
+            styles: [
+                {
+                    featureType: 'poi',
+                    stylers: [{ visibility: 'off' }]
+                },
+            ]
         });
     }
 
