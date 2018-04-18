@@ -12,6 +12,7 @@ import { MatTableModule } from '@angular/material/table';
 import { NgMathPipesModule } from 'angular-pipes';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTabsModule } from '@angular/material/tabs';
 
 import { AppComponent } from 'app/app.component';
 import { AppRoutingModule } from 'app/app-routing.module';
@@ -26,6 +27,8 @@ import { SnapToRoadComponent } from './components/snap-to-road/snap-to-road.comp
 import { MapComponent } from './components/map/map.component';
 import { StravaAPIService } from './services/strava-api.service';
 import { SnapToRoadService } from 'app/services/snap-to-road.service';
+import { MapMapboxComponent } from 'app/components/map-mapbox/map-mapbox.component';
+import { MapGoogleComponent } from 'app/components/map-google/map-google.component';
 
 @NgModule({
     declarations: [
@@ -35,6 +38,8 @@ import { SnapToRoadService } from 'app/services/snap-to-road.service';
         ActivitiesComponent,
         SnapToRoadComponent,
         MapComponent,
+        MapGoogleComponent,
+        MapMapboxComponent,
     ],
     providers: [
         ActivityLoaderService,
@@ -59,6 +64,7 @@ import { SnapToRoadService } from 'app/services/snap-to-road.service';
         MatSelectModule,
         MatSidenavModule,
         MatTableModule,
+        MatTabsModule,
         MatToolbarModule,
 
         NgMathPipesModule,

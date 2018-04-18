@@ -1,1 +1,8 @@
-<div #map style="height: 800px"></div>
+<mat-tab-group>
+    <mat-tab label="Mapbox">
+        <app-map-mapbox [routes]="routes"></app-map-mapbox>
+    </mat-tab>
+    <mat-tab label="Google Maps">
+        <app-map-google [routes]="routes" *ngIf="googleLoaded"></app-map-google>
+    </mat-tab>
+</mat-tab-group>
