@@ -35,7 +35,7 @@ export class ActivityLoaderService {
 
         for (const activity of activities) {
             await this.loadActivity(activity);
-            await this.loadStreams(activity);
+            // await this.loadStreams(activity);
         }
     }
 

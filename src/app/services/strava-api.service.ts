@@ -52,8 +52,8 @@ export class StravaAPIService {
     public async getLatlngStream(activityId: number): Promise<LatLngStream> {
         const token = await this.stravaAuthService.getAuthToken();
         return await this.httpClient
-            .get<[DistanceStream, LatLngStream]>(`https://www.strava.com/api/v3/activities/${activityId}/streams/latlng?access_token=${token}`)
-            .map(r => r[1])
+            .get<[LatLngStream, DistanceStream]>(`https://www.strava.com/api/v3/activities/${activityId}/streams/latlng?access_token=${token}`)
+            .map(r => r[0])
             .toPromise();
     }
 
