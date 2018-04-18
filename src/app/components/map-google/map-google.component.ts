@@ -26,7 +26,8 @@ export class MapGoogleComponent implements OnInit {
     public ngOnInit(): void {
         this.bounds = new google.maps.LatLngBounds();
         this.map = new google.maps.Map(this.mapContainer.nativeElement, {
-            center: { lat: -34.397, lng: 150.644 },
+            mapTypeId: google.maps.MapTypeId.TERRAIN,
+            center: { lat: 0, lng: 0 },
             zoom: 8,
             styles: [
                 {
