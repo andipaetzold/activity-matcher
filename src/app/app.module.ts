@@ -29,12 +29,14 @@ import { StravaAPIService } from './services/strava-api.service';
 import { SnapToRoadService } from 'app/services/snap-to-road.service';
 import { MapMapboxComponent } from 'app/components/map-mapbox/map-mapbox.component';
 import { MapGoogleComponent } from 'app/components/map-google/map-google.component';
+import { LapDetectionComponent } from 'app/components/lap-detection/lap-detection.component';
 
 @NgModule({
     declarations: [
         AppComponent,
         NavComponent,
         HomeComponent,
+        LapDetectionComponent,
         ActivitiesComponent,
         SnapToRoadComponent,
         MapComponent,

@@ -4,6 +4,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { HomeComponent } from 'app/components/home/home.component';
 import { ActivitiesComponent } from './components/activities/activities.component';
 import { SnapToRoadComponent } from './components/snap-to-road/snap-to-road.component';
+import { LapDetectionComponent } from './components/lap-detection/lap-detection.component';
 
 
 const routes: Routes = [
@@ -18,6 +19,10 @@ const routes: Routes = [
     {
         path: 'snap-to-road',
         component: SnapToRoadComponent,
+    },
+    {
+        path: 'lap-detection',
+        component: LapDetectionComponent,
     },
     {
         path: '**',
