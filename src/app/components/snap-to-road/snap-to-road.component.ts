@@ -30,8 +30,6 @@ export class SnapToRoadComponent implements OnInit {
     private _snappedRoute: BehaviorSubject<Position[]> = new BehaviorSubject([]);
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
 
-    private _routes: Observable<[Position[], Position[]]>;
-
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
         private readonly httpClient: HttpClient,
