@@ -9,6 +9,8 @@ import { LatLngStream } from "../domain/LatLngStream";
 import { AltitudeStream } from "app/domain/AltitudeStream";
 import { TimeStream } from "app/domain/TimeStream";
 import { SmoothVelocityStream } from "../domain/SmoothVelocityStream";
+import { AllStreams } from "../domain/AllStreams";
+import { StreamResolution } from "../domain/StreamResolutions";
 
 @Injectable()
 export class StravaAPIService {
@@ -33,51 +35,12 @@ export class StravaAPIService {
         return await this.httpClient.get<DetailedActivity>(`https://www.strava.com/api/v3/activities/${activityId}?access_token=${token}`).toPromise();
     }
 
-    public async getAltitudeStream(activityId: number): Promise<AltitudeStream> {
+    public async getStreams(activityId: number, resolution: StreamResolution): Promise<AllStreams> {
         const token = await this.stravaAuthService.getAuthToken();
-        return await this.httpClient
-            .get<[DistanceStream, AltitudeStream]>(`https://www.strava.com/api/v3/activities/${activityId}/streams/altitude?access_token=${token}`)
-            .map(r => r[0])
-            .toPromise();;
-    }
 
-    public async getHeartRateStream(activityId: number): Promise<HeartrateStream> {
-        const token = await this.stravaAuthService.getAuthToken();
+        const url = `https://www.strava.com/api/v3/activities/${activityId}/streams?resolution=${resolution}&keys=altitude,heartrate,latlng,time,velocity_smooth,distance&access_token=${token}`;
         return await this.httpClient
-            .get<[DistanceStream, HeartrateStream]>(`https://www.strava.com/api/v3/activities/${activityId}/streams/heartrate?access_token=${token}`)
-            .map(r => r[1])
-            .toPromise();
-    }
-
-    public async getLatlngStream(activityId: number): Promise<LatLngStream> {
-        const token = await this.stravaAuthService.getAuthToken();
-        return await this.httpClient
-            .get<[LatLngStream, DistanceStream]>(`https://www.strava.com/api/v3/activities/${activityId}/streams/latlng?access_token=${token}`)
-            .map(r => r[0])
-            .toPromise();
-    }
-
-    public async getTimeStream(activityId: number): Promise<TimeStream> {
-        const token = await this.stravaAuthService.getAuthToken();
-        return await this.httpClient
-            .get<[DistanceStream, TimeStream]>(`https://www.strava.com/api/v3/activities/${activityId}/streams/time?access_token=${token}`)
-            .map(r => r[1])
-            .toPromise();
-    }
-
-    public async getVelocityStream(activityId: number): Promise<SmoothVelocityStream> {
-        const token = await this.stravaAuthService.getAuthToken();
-        return await this.httpClient
-            .get<[DistanceStream, SmoothVelocityStream]>(`https://www.strava.com/api/v3/activities/${activityId}/streams/velocity_smooth?access_token=${token}`)
-            .map(r => r[1])
-            .toPromise();
-    }
-
-    public async getDistanceStream(activityId: number): Promise<DistanceStream> {
-        const token = await this.stravaAuthService.getAuthToken();
-        return await this.httpClient
-            .get<[DistanceStream, SmoothVelocityStream]>(`https://www.strava.com/api/v3/activities/${activityId}/streams/velocity_smooth?access_token=${token}`)
-            .map(r => r[0])
+            .get<AllStreams>(url)
             .toPromise();
     }
 }

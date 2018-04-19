@@ -88,10 +88,10 @@ export class MapMapboxComponent implements OnInit {
             return;
         }
 
-
         const bounds = this.allPoints.reduce((bounds, coord) => bounds.extend(new LngLat(coord[0], coord[1])), new LngLatBounds(this.allPoints[0], this.allPoints[0]));
         this.map.fitBounds(bounds, {
-            padding: 50
+            padding: 50,
+            maxDuration: 1
         });
     }
 }

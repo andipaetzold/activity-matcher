@@ -6,14 +6,23 @@ import { DetailedAthlete } from "../domain/DetailedAthlete";
 import { DetailedActivity } from "../domain/DetailedActivity";
 import { LatLng } from "../domain/LatLng";
 import { StravaAPIService } from "./strava-api.service";
+import { BehaviorSubject } from "rxjs/BehaviorSubject";
+import { Observable } from "rxjs/Observable";
+import { StreamResolution, STREAM_RESOLUTIONS } from "../domain/StreamResolutions";
+import { LatLngStream } from "../domain/LatLngStream";
+import { Position } from 'geojson';
+import { SnapToRoadService } from "./snap-to-road.service";
 
 @Injectable()
 export class ActivityLoaderService {
+    private _logs: BehaviorSubject<string[]> = new BehaviorSubject<string[]>([]);
+
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
         private readonly httpClient: HttpClient,
         private readonly firestore: AngularFirestore,
         private readonly stravaAPIService: StravaAPIService,
+        private readonly snapToRoadService: SnapToRoadService,
     ) {
     }
 
@@ -25,17 +34,25 @@ export class ActivityLoaderService {
     }
 
     private async loadAthlete(): Promise<void> {
+        this.addLogs('Loading athlete...');
         const athlete = await this.stravaAPIService.getAthlete();
+
+        this.addLogs(`Loaded athlete ${athlete.firstname} ${athlete.lastname}`);
         await this.firestore.collection('athletes').doc(String(athlete.id)).set(athlete);
     }
 
     private async loadActivities(): Promise<void> {
+        this.addLogs('Loading activities...');
         let activities = await this.stravaAPIService.getActivities();
         activities = activities.filter(activity => !!activity.map.summary_polyline);
 
+        this.addLogs(`${activities.length} activities found`);
+        let activityCounter = 1;
         for (const activity of activities) {
+            this.addLogs(`Loading activity details... [${activityCounter++} of ${activities.length}]`);
+
             await this.loadActivity(activity);
-            // await this.loadStreams(activity);
+            await this.loadStreams(activity);
         }
     }
 
@@ -47,20 +64,37 @@ export class ActivityLoaderService {
 
     private async loadStreams(activity: DetailedActivity): Promise<void> {
         const activityDoc = this.firestore.collection('athletes').doc(String(activity.athlete.id)).collection('activities').doc(String(activity.id));
-        const dataDoc = activityDoc.collection('data');
 
-        await dataDoc.doc('altitude').set(await this.stravaAPIService.getAltitudeStream(activity.id));
+        const promises: Promise<any>[] = [];
+        for (const resolution of STREAM_RESOLUTIONS) {
+            const streams = await this.stravaAPIService.getStreams(activity.id, resolution);
 
-        const heartrate = await this.stravaAPIService.getHeartRateStream(activity.id);
-        if (heartrate) {
-            await dataDoc.doc('heartrate').set(heartrate);
+            for (const stream of streams) {
+                let data: any = stream.data;
+                if ((<any>stream).type === 'latlng') {
+                    data = (<LatLng[]>data).map(coord => ({
+                        lat: coord[0],
+                        lng: coord[1],
+                    }));
+                }
+
+                promises.push(activityDoc.collection((<any>stream).type).doc(stream.resolution).set({
+                    data,
+                    series_type: stream.series_type,
+                }));
+            }
         }
 
-        await dataDoc.doc('time').set(await this.stravaAPIService.getTimeStream(activity.id));
-        await dataDoc.doc('velocity').set(await this.stravaAPIService.getVelocityStream(activity.id));
+        await Promise.all(promises);
+    }
 
-        const latlngResponse: any = await this.stravaAPIService.getLatlngStream(activity.id);
-        latlngResponse.data = latlngResponse.data.map((e: LatLng): any => ({ lat: e[0], lng: e[1] }));
-        await dataDoc.doc('coordinates').set(latlngResponse);
+    public addLogs(text: string): void {
+        const prevLogs = this._logs.value;
+        prevLogs.push(text);
+        this._logs.next(prevLogs);
+    }
+
+    public get logs(): Observable<string[]> {
+        return this._logs.asObservable();
     }
 }

@@ -42,4 +42,8 @@ export class HomeComponent implements OnInit {
     public async load(): Promise<void> {
         await this.activityLoaderService.load();
     }
+
+    public get logs(): Observable<string[]> {
+        return this.activityLoaderService.logs.map(logs => logs.slice(-20));
+    }
 }

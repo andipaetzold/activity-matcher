@@ -10,5 +10,9 @@
 
     <mat-card-content>
         <button *ngIf="isLoggedIn() | async" (click)="load()" mat-raised-button>Load data</button>
+
+        <mat-list>
+            <div mat-list-item *ngFor="let logText of logs | async">{{ logText }}</div>
+        </mat-list>
     </mat-card-content>
 </mat-card>

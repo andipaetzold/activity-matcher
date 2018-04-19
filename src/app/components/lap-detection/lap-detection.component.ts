@@ -1,5 +1,4 @@
 import { Component, OnInit } from "@angular/core";
-import { decode } from 'polyline';
 import { Observable } from "rxjs/Observable";
 import { BehaviorSubject } from "rxjs/BehaviorSubject";
 import { DetailedActivity } from "app/domain/DetailedActivity";
@@ -30,20 +29,6 @@ export class LapDetectionComponent implements OnInit {
         private readonly stravaAPIService: StravaAPIService,
         private readonly snapToRoadService: SnapToRoadService,
     ) {
-        this._selectedRoute = combineLatest(
-            this._selectedActivity,
-            this._selectedQuality,
-        )
-            .filter(([a, q]) => !!a)
-            .map(([activity, quality]) => {
-                if (quality == 'summary_polyline') {
-                    return decode(activity.map.summary_polyline);
-                } else {
-                    return decode(activity.map.polyline);
-                }
-            })
-            .map(route => route.map(p => [p[1], p[0]]))
-            .defaultIfEmpty([]);
     }
 
     public async ngOnInit(): Promise<void> {
@@ -57,13 +42,5 @@ export class LapDetectionComponent implements OnInit {
 
     public get selectedActivity(): DetailedActivity {
         return this._selectedActivity.value;
-    }
-
-    public set selectedQuality(quality: string) {
-        this._selectedQuality.next(quality);
-    }
-
-    public get selectedQuality(): string {
-        return this._selectedQuality.value;
     }
 }
