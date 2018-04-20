@@ -51,8 +51,14 @@ export class ActivityLoaderService {
         for (const activity of activities) {
             this.addLogs(`Loading activity details... [${activityCounter++} of ${activities.length}]`);
 
-            await this.loadActivity(activity);
-            await this.loadStreams(activity);
+            const activityDoc = this.firestore.collection('athletes').doc(String(activity.athlete.id)).collection('activities').doc(String(activity.id));
+            const snap = await activityDoc.snapshotChanges().take(1).toPromise();
+            if (snap.payload.exists) {
+                this.addLogs('Skipped');
+            } else {
+                await this.loadActivity(activity);
+                await this.loadStreams(activity);
+            }
         }
     }
 

@@ -27,7 +27,22 @@ export class StravaAPIService {
 
     public async getActivities(): Promise<DetailedActivity[]> {
         const token = await this.stravaAuthService.getAuthToken();
-        return await this.httpClient.get<DetailedActivity[]>(`https://www.strava.com/api/v3/athlete/activities?access_token=${token}`).toPromise();
+
+        const activities: DetailedActivity[] = [];
+
+        let page = 1;
+        while (true) {
+            const activitiesPage = await this.httpClient.get<DetailedActivity[]>(`https://www.strava.com/api/v3/athlete/activities?page=${page++}&access_token=${token}`).toPromise();
+
+            if (activitiesPage.length == 0) {
+                break;
+            }
+
+            activities.push(...activitiesPage);
+        }
+
+        return activities;
+
     }
 
     public async getActivity(activityId: number): Promise<DetailedActivity> {
