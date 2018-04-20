@@ -30,10 +30,12 @@ import { SnapToRoadService } from 'app/services/snap-to-road.service';
 import { MapMapboxComponent } from 'app/components/map-mapbox/map-mapbox.component';
 import { MapGoogleComponent } from 'app/components/map-google/map-google.component';
 import { LapDetectionComponent } from 'app/components/lap-detection/lap-detection.component';
+import { CompareRoutesComponent } from 'app/components/compare-routes/compare-routes.component';
 
 @NgModule({
     declarations: [
         AppComponent,
+        CompareRoutesComponent,
         NavComponent,
         HomeComponent,
         LapDetectionComponent,
