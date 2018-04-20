@@ -29,7 +29,7 @@ export class CompareRoutesService {
                 const d2 = distance(pathCoords1[indexPath1 + 1], pathCoords2[indexPath2 + 1], distanceOptions);
                 if (d1 < maxDistance && d2 < maxDistance) {
                     overlappingPaths.push([path1[indexPath1], path1[indexPath1 + 1]]);
-                    continue;
+                    break;
                 }
             }
         }
