@@ -11,6 +11,7 @@ import { SnapToRoadService } from "app/services/snap-to-road.service";
 import { Position } from 'geojson';
 import { of } from "rxjs/observable/of";
 import { MapRoute } from "app/domain/MapRoute";
+import { Router, ActivatedRoute } from "@angular/router";
 
 @Component({
     selector: 'app-compare-routes',
@@ -32,6 +33,8 @@ export class CompareRoutesComponent implements OnInit {
         private readonly firestore: AngularFirestore,
         private readonly stravaAPIService: StravaAPIService,
         private readonly snapToRoadService: SnapToRoadService,
+        private readonly router: Router,
+        private readonly route: ActivatedRoute,
     ) {
         this._selectedPath1 =
             combineLatest(
@@ -105,10 +108,24 @@ export class CompareRoutesComponent implements OnInit {
             .valueChanges()
             .map(a => a.reverse())
             .take(1).toPromise();
+
+        if (this.route.snapshot.queryParamMap.has('activity1')) {
+            this.selectedActivity1 = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity1')))
+        }
+
+        if (this.route.snapshot.queryParamMap.has('activity2')) {
+            this.selectedActivity2 = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity2')))
+        }
     }
 
     public set selectedActivity1(activity: DetailedActivity) {
         this._selectedActivity1.next(activity);
+        this.router.navigate([], {
+            queryParams: {
+                ...this.route.snapshot.queryParams,
+                'activity1': String(activity.id),
+            },
+        });
     }
 
     public get selectedActivity1(): DetailedActivity {
@@ -117,6 +134,12 @@ export class CompareRoutesComponent implements OnInit {
 
     public set selectedActivity2(activity: DetailedActivity) {
         this._selectedActivity2.next(activity);
+        this.router.navigate([], {
+            queryParams: {
+                ...this.route.snapshot.queryParams,
+                'activity2': String(activity.id),
+            },
+        });
     }
 
     public get selectedActivity2(): DetailedActivity {

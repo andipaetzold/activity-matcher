@@ -11,6 +11,7 @@ import { SnapToRoadService } from "app/services/snap-to-road.service";
 import { Position } from 'geojson';
 import { of } from "rxjs/observable/of";
 import { MapRoute } from "../../domain/MapRoute";
+import { Router, ActivatedRoute } from "@angular/router";
 
 @Component({
     selector: 'app-lap-detection',
@@ -30,6 +31,8 @@ export class LapDetectionComponent implements OnInit {
         private readonly firestore: AngularFirestore,
         private readonly stravaAPIService: StravaAPIService,
         private readonly snapToRoadService: SnapToRoadService,
+        private readonly router: Router,
+        private readonly route: ActivatedRoute,
     ) {
 
         this._selectedPath =
@@ -73,10 +76,20 @@ export class LapDetectionComponent implements OnInit {
             .valueChanges()
             .map(a => a.reverse())
             .take(1).toPromise();
+
+        if (this.route.snapshot.queryParamMap.has('activity')) {
+            this.selectedActivity = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity')))
+        }
     }
 
     public set selectedActivity(activity: DetailedActivity) {
         this._selectedActivity.next(activity);
+        this.router.navigate([], {
+            queryParams: {
+                ...this.route.snapshot.queryParams,
+                'activity': String(activity.id),
+            },
+        });
     }
 
     public get selectedActivity(): DetailedActivity {

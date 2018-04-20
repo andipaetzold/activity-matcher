@@ -15,6 +15,7 @@ import { SnapToRoadService } from "../../services/snap-to-road.service";
 import { fromPromise } from "rxjs/observable/fromPromise";
 import { of } from "rxjs/observable/of";
 import { MapRoute } from "app/domain/MapRoute";
+import { ActivatedRoute, Router } from "@angular/router";
 
 @Component({
     selector: 'app-snap-to-road',
@@ -36,6 +37,8 @@ export class SnapToRoadComponent implements OnInit {
         private readonly firestore: AngularFirestore,
         private readonly stravaAPIService: StravaAPIService,
         private readonly snapToRoadService: SnapToRoadService,
+        private readonly router: Router,
+        private readonly route: ActivatedRoute,
     ) {
         this._selectedPath = this._selectedActivity
             .filter(activity => !!activity)
@@ -86,10 +89,20 @@ export class SnapToRoadComponent implements OnInit {
             .valueChanges()
             .map(a => a.reverse())
             .take(1).toPromise();
+
+        if (this.route.snapshot.queryParamMap.has('activity')) {
+            this.selectedActivity = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity')))
+        }
     }
 
     public set selectedActivity(activity: DetailedActivity) {
         this._selectedActivity.next(activity);
+        this.router.navigate([], {
+            queryParams: {
+                ...this.route.snapshot.queryParams,
+                'activity': String(activity.id),
+            },
+        });
     }
 
     public get selectedActivity(): DetailedActivity {
