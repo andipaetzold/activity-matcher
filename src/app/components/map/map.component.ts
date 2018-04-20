@@ -1,4 +1,5 @@
 import { Component, Input } from "@angular/core";
+import { MapRoute } from "app/domain/MapRoute";
 
 @Component({
     selector: 'app-map',
@@ -6,7 +7,7 @@ import { Component, Input } from "@angular/core";
 })
 export class MapComponent {
     @Input()
-    public routes: Position[][];
+    public routes: MapRoute[];
 
     public get googleLoaded() {
         return google;

@@ -14,6 +14,7 @@ import { combineLatest } from 'rxjs/observable/combineLatest';
 import { SnapToRoadService } from "../../services/snap-to-road.service";
 import { fromPromise } from "rxjs/observable/fromPromise";
 import { of } from "rxjs/observable/of";
+import { MapRoute } from "app/domain/MapRoute";
 
 @Component({
     selector: 'app-snap-to-road',
@@ -24,10 +25,10 @@ export class SnapToRoadComponent implements OnInit {
     private token: string = undefined;
 
     private _selectedActivity: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
-    private _selectedRoute: Observable<Position[]>;
-    private _snappedRoute: Observable<Position[]> = of([]);
+    private _selectedPath: Observable<Position[]>;
+    private _snappedPath: Observable<Position[]> = of([]);
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
-    private _routes: Observable<Position[][]>;
+    private _routes: Observable<MapRoute[]>;
 
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
@@ -36,7 +37,7 @@ export class SnapToRoadComponent implements OnInit {
         private readonly stravaAPIService: StravaAPIService,
         private readonly snapToRoadService: SnapToRoadService,
     ) {
-        this._selectedRoute = this._selectedActivity
+        this._selectedPath = this._selectedActivity
             .filter(activity => !!activity)
             .mergeMap(activity => this.firestore
                 .collection('athletes').doc(String(activity.athlete.id))
@@ -46,9 +47,9 @@ export class SnapToRoadComponent implements OnInit {
             .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat]))
             .defaultIfEmpty([]);
 
-        this._snappedRoute =
+        this._snappedPath =
             combineLatest(
-                this._selectedRoute,
+                this._selectedPath,
                 this._selectedSnapType,
             )
                 .distinctUntilChanged()
@@ -70,8 +71,8 @@ export class SnapToRoadComponent implements OnInit {
                 .defaultIfEmpty([]);
 
         this._routes = combineLatest(
-            this._selectedRoute,
-            this._snappedRoute,
+            this._selectedPath.map(path => ({ path })),
+            this._snappedPath.map(path => ({ path, color: 'blue' })),
         );
     }
 
@@ -103,7 +104,7 @@ export class SnapToRoadComponent implements OnInit {
         return this._selectedSnapType.value;
     }
 
-    public get routes(): Observable<Position[][]> {
+    public get routes(): Observable<MapRoute[]> {
         return this._routes;
     }
 }

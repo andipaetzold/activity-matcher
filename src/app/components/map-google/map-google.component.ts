@@ -3,8 +3,7 @@ import { Map, LngLatBounds, LngLat } from 'mapbox-gl';
 import { lineString, Feature, LineString, MultiPolygon, Point, Polygon } from '@turf/helpers';
 import { Position } from 'geojson';
 import { } from '@types/googlemaps';
-
-const colors = ['black', 'blue', 'red'];
+import { MapRoute } from "app/domain/MapRoute";
 
 @Component({
     selector: 'app-map-google',
@@ -12,7 +11,7 @@ const colors = ['black', 'blue', 'red'];
 })
 export class MapGoogleComponent implements OnInit {
     private lines: google.maps.Polyline[] = [];
-    private routes: Position[][];
+    private routes: MapRoute[];
     private bounds: google.maps.LatLngBounds;
 
     @ViewChild('map')
@@ -53,30 +52,28 @@ export class MapGoogleComponent implements OnInit {
 
 
     @Input('routes')
-    public set routeInput(routes: Position[][]) {
+    public set routeInput(routes: MapRoute[]) {
         this.clear();
         this.routes = routes || [];
 
-        let colorId = 0;
-
         for (const route of this.routes) {
-            if (route.length >= 2) {
-                this.addLineLayer(route, colors[colorId++]);
+            if (route.path.length >= 2) {
+                this.addLineLayer(route);
             }
         }
         this.fitToBounds();
     }
 
-    public addLineLayer(coordinates: Position[], color: string, width?: number) {
-        const coords = coordinates.map(coord => ({ lat: coord[1], lng: coord[0] }));
+    public addLineLayer(route: MapRoute) {
+        const coords = route.path.map(coord => ({ lat: coord[1], lng: coord[0] }));
         coords.forEach(coord => this.bounds.extend(coord));
 
         const line = new google.maps.Polyline({
             path: coords,
             geodesic: true,
-            strokeColor: color,
+            strokeColor: route.color || 'black',
             strokeOpacity: 1.0,
-            strokeWeight: width || 1
+            strokeWeight: route.width || 1,
         });
         line.setMap(this.map);
 

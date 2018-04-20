@@ -10,6 +10,7 @@ import { StravaAPIService } from "app/services/strava-api.service";
 import { SnapToRoadService } from "app/services/snap-to-road.service";
 import { Position } from 'geojson';
 import { of } from "rxjs/observable/of";
+import { MapRoute } from "../../domain/MapRoute";
 
 @Component({
     selector: 'app-lap-detection',
@@ -19,9 +20,9 @@ export class LapDetectionComponent implements OnInit {
     public activities: DetailedActivity[] = [];
 
     private _selectedActivity: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
-    private _selectedRoute: Observable<Position[]>;
+    private _selectedPath: Observable<Position[]>;
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
-    private _routes: Observable<Position[][]>;
+    private _routes: Observable<MapRoute[]>;
 
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
@@ -31,7 +32,7 @@ export class LapDetectionComponent implements OnInit {
         private readonly snapToRoadService: SnapToRoadService,
     ) {
 
-        this._selectedRoute =
+        this._selectedPath =
             combineLatest(
                 this._selectedActivity
                     .filter(activity => !!activity)
@@ -59,7 +60,7 @@ export class LapDetectionComponent implements OnInit {
             })
                 .defaultIfEmpty([]);
 
-        this._routes = this._selectedRoute.map(r => [r]);
+        this._routes = this._selectedPath.map(path => [{ path }]);
     }
 
     public async ngOnInit(): Promise<void> {
@@ -90,7 +91,7 @@ export class LapDetectionComponent implements OnInit {
         return this._selectedSnapType.value;
     }
 
-    public get routes(): Observable<Position[][]> {
+    public get routes(): Observable<MapRoute[]> {
         return this._routes;
     }
 }

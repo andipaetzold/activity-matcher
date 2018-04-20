@@ -10,6 +10,7 @@ import { StravaAPIService } from "app/services/strava-api.service";
 import { SnapToRoadService } from "app/services/snap-to-road.service";
 import { Position } from 'geojson';
 import { of } from "rxjs/observable/of";
+import { MapRoute } from "app/domain/MapRoute";
 
 @Component({
     selector: 'app-compare-routes',
@@ -20,10 +21,10 @@ export class CompareRoutesComponent implements OnInit {
 
     private _selectedActivity1: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
     private _selectedActivity2: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
-    private _selectedRoute1: Observable<Position[]>;
-    private _selectedRoute2: Observable<Position[]>;
+    private _selectedPath1: Observable<Position[]>;
+    private _selectedPath2: Observable<Position[]>;
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
-    private _routes: Observable<Position[][]>;
+    private _routes: Observable<MapRoute[]>;
 
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
@@ -32,7 +33,7 @@ export class CompareRoutesComponent implements OnInit {
         private readonly stravaAPIService: StravaAPIService,
         private readonly snapToRoadService: SnapToRoadService,
     ) {
-        this._selectedRoute1 =
+        this._selectedPath1 =
             combineLatest(
                 this._selectedActivity1
                     .filter(activity => !!activity)
@@ -60,7 +61,7 @@ export class CompareRoutesComponent implements OnInit {
             })
                 .defaultIfEmpty([]);
 
-        this._selectedRoute2 =
+        this._selectedPath2 =
             combineLatest(
                 this._selectedActivity2
                     .filter(activity => !!activity)
@@ -88,7 +89,10 @@ export class CompareRoutesComponent implements OnInit {
             })
                 .defaultIfEmpty([]);
 
-        this._routes = combineLatest(this._selectedRoute1, this._selectedRoute2);
+        this._routes = combineLatest(
+            this._selectedPath1.map(path => ({ path, color: 'red' })),
+            this._selectedPath2.map(path => ({ path, color: 'green' }))
+        );
     }
 
     public async ngOnInit(): Promise<void> {
@@ -127,7 +131,7 @@ export class CompareRoutesComponent implements OnInit {
         return this._selectedSnapType.value;
     }
 
-    public get routes(): Observable<Position[][]> {
+    public get routes(): Observable<MapRoute[]> {
         return this._routes;
     }
 }
