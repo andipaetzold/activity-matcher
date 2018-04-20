@@ -1,31 +1,47 @@
 import { Injectable } from "@angular/core";
 import { Position } from 'geojson';
-import { point } from '@turf/helpers';
+import { point, lineString, Units } from '@turf/helpers';
 import distance from '@turf/distance';
+import length from '@turf/length';
+
+export interface CompareResult {
+    overlappingPaths: Position[][];
+    percentage: number;
+    calculationTime: number;
+}
 
 @Injectable()
 export class CompareRoutesService {
-    public comparePoints(path1: Position[], path2: Position[], maxDistance: number = 0.005): Position[][] {
+    public comparePoints(path1: Position[], path2: Position[], maxDistance: number = 0.005): CompareResult {
         const distanceOptions = {
-            units: 'kilometers',
+            units: <Units>'meters',
         };
 
         const pathCoords1 = path1.map(p => point(p));
         const pathCoords2 = path2.map(p => point(p));
 
-        const result: Position[][] = [];
+        const overlappingPaths: Position[][] = [];
 
+        const timeBegin = performance.now();
         for (let indexPath1 = 0; indexPath1 < path1.length - 1; ++indexPath1) {
             for (let indexPath2 = 0; indexPath2 < path2.length - 1; ++indexPath2) {
-                const d1 = distance(pathCoords1[indexPath1], pathCoords2[indexPath2]);
-                const d2 = distance(pathCoords1[indexPath1 + 1], pathCoords2[indexPath2 + 1]);
+                const d1 = distance(pathCoords1[indexPath1], pathCoords2[indexPath2], distanceOptions);
+                const d2 = distance(pathCoords1[indexPath1 + 1], pathCoords2[indexPath2 + 1], distanceOptions);
                 if (d1 < maxDistance && d2 < maxDistance) {
-                    result.push([path1[indexPath1], path1[indexPath1 + 1]]);
+                    overlappingPaths.push([path1[indexPath1], path1[indexPath1 + 1]]);
                     continue;
                 }
             }
         }
+        const timeEnd = performance.now();
 
-        return result;
+        const originalDistance = length(lineString(path1), distanceOptions);
+        const resultDistance = overlappingPaths.map(path => length(lineString(path), distanceOptions)).reduce((a, b) => a + b, 0);
+
+        return {
+            overlappingPaths,
+            percentage: resultDistance / originalDistance,
+            calculationTime: timeEnd - timeBegin,
+        };
     }
 }

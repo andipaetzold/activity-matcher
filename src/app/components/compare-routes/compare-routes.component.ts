@@ -12,7 +12,7 @@ import { Position } from 'geojson';
 import { of } from "rxjs/observable/of";
 import { MapRoute } from "app/domain/MapRoute";
 import { Router, ActivatedRoute } from "@angular/router";
-import { CompareRoutesService } from "../../services/compare-routes.service";
+import { CompareRoutesService, CompareResult } from "../../services/compare-routes.service";
 
 @Component({
     selector: 'app-compare-routes',
@@ -28,6 +28,7 @@ export class CompareRoutesComponent implements OnInit {
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
     private _routes: Observable<MapRoute[]>;
 
+    private _compareResult: Observable<CompareResult>;
     private _overlappingPaths: Observable<Position[][]>;
 
     private _maxDistance: BehaviorSubject<number> = new BehaviorSubject<number>(5);
@@ -98,11 +99,13 @@ export class CompareRoutesComponent implements OnInit {
             })
                 .defaultIfEmpty([]);
 
-        this._overlappingPaths = combineLatest(
+        this._compareResult = combineLatest(
             this._selectedPath1,
             this._selectedPath2,
             this._maxDistance
-        ).map(([path1, path2, maxDistance]) => this.compareRoutesService.comparePoints(path1, path2, maxDistance / 1000));
+        ).map(([path1, path2, maxDistance]) => this.compareRoutesService.comparePoints(path1, path2, maxDistance));
+
+        this._overlappingPaths = this._compareResult.map(r => r.overlappingPaths);
 
         this._routes = combineLatest(
             this._selectedPath1,
@@ -181,5 +184,9 @@ export class CompareRoutesComponent implements OnInit {
 
     public set maxDistance(d: number) {
         this._maxDistance.next(d);
+    }
+
+    public get compareResult(): Observable<CompareResult> {
+        return this._compareResult;
     }
 }
