@@ -13,6 +13,8 @@ import { NgMathPipesModule } from 'angular-pipes';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatInputModule } from '@angular/material/input';
+import { FormsModule } from '@angular/forms';
 
 import { AppComponent } from 'app/app.component';
 import { AppRoutingModule } from 'app/app-routing.module';
@@ -31,6 +33,7 @@ import { MapMapboxComponent } from 'app/components/map-mapbox/map-mapbox.compone
 import { MapGoogleComponent } from 'app/components/map-google/map-google.component';
 import { LapDetectionComponent } from 'app/components/lap-detection/lap-detection.component';
 import { CompareRoutesComponent } from 'app/components/compare-routes/compare-routes.component';
+import { CompareRoutesService } from 'app/services/compare-routes.service';
 
 @NgModule({
     declarations: [
@@ -50,6 +53,7 @@ import { CompareRoutesComponent } from 'app/components/compare-routes/compare-ro
         SnapToRoadService,
         StravaAuthService,
         StravaAPIService,
+        CompareRoutesService,
     ],
     imports: [
         AppRoutingModule,
@@ -59,10 +63,12 @@ import { CompareRoutesComponent } from 'app/components/compare-routes/compare-ro
 
         BrowserModule,
         BrowserAnimationsModule,
+        FormsModule,
         HttpClientModule,
 
         MatButtonModule,
         MatCardModule,
+        MatInputModule,
         MatListModule,
         MatPaginatorModule,
         MatSelectModule,

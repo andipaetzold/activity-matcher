@@ -12,6 +12,7 @@ import { Position } from 'geojson';
 import { of } from "rxjs/observable/of";
 import { MapRoute } from "app/domain/MapRoute";
 import { Router, ActivatedRoute } from "@angular/router";
+import { CompareRoutesService } from "../../services/compare-routes.service";
 
 @Component({
     selector: 'app-compare-routes',
@@ -27,6 +28,10 @@ export class CompareRoutesComponent implements OnInit {
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
     private _routes: Observable<MapRoute[]>;
 
+    private _overlappingPaths: Observable<Position[][]>;
+
+    private _maxDistance: BehaviorSubject<number> = new BehaviorSubject<number>(5);
+
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
         private readonly httpClient: HttpClient,
@@ -35,6 +40,7 @@ export class CompareRoutesComponent implements OnInit {
         private readonly snapToRoadService: SnapToRoadService,
         private readonly router: Router,
         private readonly route: ActivatedRoute,
+        private readonly compareRoutesService: CompareRoutesService,
     ) {
         this._selectedPath1 =
             combineLatest(
@@ -92,10 +98,21 @@ export class CompareRoutesComponent implements OnInit {
             })
                 .defaultIfEmpty([]);
 
+        this._overlappingPaths = combineLatest(
+            this._selectedPath1,
+            this._selectedPath2,
+            this._maxDistance
+        ).map(([path1, path2, maxDistance]) => this.compareRoutesService.comparePoints(path1, path2, maxDistance / 1000));
+
         this._routes = combineLatest(
-            this._selectedPath1.map(path => ({ path, color: 'red' })),
-            this._selectedPath2.map(path => ({ path, color: 'green' }))
-        );
+            this._selectedPath1,
+            this._selectedPath2,
+            this._overlappingPaths
+        ).map(([selectedPath1, selectedPath2, overlappingPaths]) => [
+            { path: selectedPath1, color: 'red' },
+            { path: selectedPath2, color: 'green' },
+            ...overlappingPaths.map(path => ({ path, color: 'blue', width: 3 })),
+        ]);
     }
 
     public async ngOnInit(): Promise<void> {
@@ -156,5 +173,13 @@ export class CompareRoutesComponent implements OnInit {
 
     public get routes(): Observable<MapRoute[]> {
         return this._routes;
+    }
+
+    public get maxDistance(): number {
+        return this._maxDistance.value;
+    }
+
+    public set maxDistance(d: number) {
+        this._maxDistance.next(d);
     }
 }
