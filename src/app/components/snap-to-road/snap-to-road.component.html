@@ -7,8 +7,8 @@
         <mat-form-field>
             <mat-select placeholder="Selected activity" [(value)]="selectedActivity">
                 <mat-option *ngFor="let activity of activities" [value]="activity">
-                    {{ activity.start_date | date:'short'}} {{ activity.name }} ({{ (activity.distance / 1000) | floor }} km | {{ (activity.elapsed_time
-                    / 60) | floor }} min)
+                    {{ activity.start_date | date:'shortDate'}} | {{ (activity.distance / 1000) | floor }} km | {{ (activity.elapsed_time / 60)
+                    | floor }} min | {{ activity.type }}
                 </mat-option>
             </mat-select>
         </mat-form-field>

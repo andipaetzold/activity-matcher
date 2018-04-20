@@ -7,16 +7,19 @@ import { Observable } from "rxjs/Observable";
 @Injectable()
 export class StravaAuthService {
     private _currentCode: BehaviorSubject<string> = new BehaviorSubject(undefined);
+    private _currentToken: BehaviorSubject<string> = new BehaviorSubject(undefined);
 
     public constructor(
         private readonly httpClient: HttpClient
     ) {
         this._currentCode.next(this.code);
+        this.refreshToken();
     }
 
     public set code(c: string) {
         window.localStorage.setItem('code', c);
         this._currentCode.next(c);
+        this.refreshToken();
     }
 
     public get code(): string {
@@ -27,7 +30,15 @@ export class StravaAuthService {
         return this._currentCode.asObservable();
     }
 
-    public async getAuthToken(): Promise<string> {
+    public get currentToken(): Observable<string> {
+        return this._currentToken.asObservable();
+    }
+
+    public get token(): string {
+        return this._currentToken.value;
+    }
+
+    public async refreshToken(): Promise<void> {
         const formData = new FormData();
         formData.append('client_id', environment.strava.clientId);
         formData.append('client_secret', environment.strava.clientSecret);
@@ -36,7 +47,9 @@ export class StravaAuthService {
         const response: any = await this.httpClient.post('https://www.strava.com/oauth/token', formData).toPromise();
 
         if (response.access_token) {
-            return response.access_token;
+            this._currentToken.next(response.access_token);
+        } else {
+            this._currentToken.next(undefined);
         }
     }
 }

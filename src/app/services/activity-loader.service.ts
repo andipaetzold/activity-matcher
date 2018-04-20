@@ -27,8 +27,6 @@ export class ActivityLoaderService {
     }
 
     public async load() {
-        const token = await this.stravaAuthService.getAuthToken();
-
         await this.loadAthlete();
         await this.loadActivities();
     }

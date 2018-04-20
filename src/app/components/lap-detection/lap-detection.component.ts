@@ -65,8 +65,15 @@ export class LapDetectionComponent implements OnInit {
     }
 
     public async ngOnInit(): Promise<void> {
+        await this.stravaAuthService.refreshToken();
+
         const athlete = await this.stravaAPIService.getAthlete();
-        this.activities = await this.firestore.collection('athletes').doc(String(athlete.id)).collection<DetailedActivity>('activities').valueChanges().take(1).toPromise();
+        this.activities = await this.firestore
+            .collection('athletes').doc(String(athlete.id))
+            .collection<DetailedActivity>('activities', ref => ref.orderBy('start_date'))
+            .valueChanges()
+            .map(a => a.reverse())
+            .take(1).toPromise();
     }
 
     public set selectedActivity(activity: DetailedActivity) {

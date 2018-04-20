@@ -21,12 +21,12 @@ export class StravaAPIService {
     }
 
     public async getAthlete(): Promise<DetailedAthlete> {
-        const token = await this.stravaAuthService.getAuthToken();
+        const token = this.stravaAuthService.token;
         return await this.httpClient.get<DetailedAthlete>(`https://www.strava.com/api/v3/athlete?access_token=${token}`).toPromise();
     }
 
     public async getActivities(): Promise<DetailedActivity[]> {
-        const token = await this.stravaAuthService.getAuthToken();
+        const token = this.stravaAuthService.token;
 
         const activities: DetailedActivity[] = [];
 
@@ -46,12 +46,12 @@ export class StravaAPIService {
     }
 
     public async getActivity(activityId: number): Promise<DetailedActivity> {
-        const token = await this.stravaAuthService.getAuthToken();
+        const token = this.stravaAuthService.token;
         return await this.httpClient.get<DetailedActivity>(`https://www.strava.com/api/v3/activities/${activityId}?access_token=${token}`).toPromise();
     }
 
     public async getStreams(activityId: number, resolution: StreamResolution): Promise<AllStreams> {
-        const token = await this.stravaAuthService.getAuthToken();
+        const token = this.stravaAuthService.token;
 
         const url = `https://www.strava.com/api/v3/activities/${activityId}/streams?resolution=${resolution}&keys=altitude,heartrate,latlng,time,velocity_smooth,distance&access_token=${token}`;
         return await this.httpClient
