@@ -1,0 +1,27 @@
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>Simplify</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <mat-form-field>
+            <mat-select placeholder="Selected activity" [(value)]="selectedActivity">
+                <mat-option *ngFor="let activity of activities" [value]="activity">
+                    {{ activity.start_date | date:'shortDate'}} | {{ (activity.distance / 1000) | floor }} km | {{ (activity.elapsed_time / 60)
+                    | floor }} min | {{ activity.type }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field>
+            <input matInput type="number" placeholder="Epsilon (in m)" [(ngModel)]="epsilon" min="1" max="100" step="0.1">
+        </mat-form-field>
+
+        <br> Original points: {{ (simplifyResult | async)?.originalPoints }}
+        <br> SimplifiedPoints points: {{ (simplifyResult | async)?.simplifiedPoints }}
+        <br> Percentage: {{ (simplifyResult | async)?.percentage * 100 | round }} %
+        <br> Calculation time: {{ (simplifyResult | async)?.calculationTime | round }} ms
+
+        <app-map [routes]="routes | async"></app-map>
+    </mat-card-content>
+</mat-card>

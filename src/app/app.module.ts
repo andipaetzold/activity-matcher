@@ -34,6 +34,8 @@ import { MapGoogleComponent } from 'app/components/map-google/map-google.compone
 import { LapDetectionComponent } from 'app/components/lap-detection/lap-detection.component';
 import { CompareRoutesComponent } from 'app/components/compare-routes/compare-routes.component';
 import { CompareRoutesService } from 'app/services/compare-routes.service';
+import { SimplifyComponent } from './components/simplify/simplify.component';
+import { SimplifyService } from './services/simplify.service';
 
 @NgModule({
     declarations: [
@@ -44,6 +46,7 @@ import { CompareRoutesService } from 'app/services/compare-routes.service';
         LapDetectionComponent,
         ActivitiesComponent,
         SnapToRoadComponent,
+        SimplifyComponent,
         MapComponent,
         MapGoogleComponent,
         MapMapboxComponent,
@@ -54,6 +57,7 @@ import { CompareRoutesService } from 'app/services/compare-routes.service';
         StravaAuthService,
         StravaAPIService,
         CompareRoutesService,
+        SimplifyService,
     ],
     imports: [
         AppRoutingModule,

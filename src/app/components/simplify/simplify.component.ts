@@ -7,26 +7,25 @@ import { Observable } from "rxjs/Observable";
 import 'rxjs/add/operator/map';
 import { DetailedActivity } from "../../domain/DetailedActivity";
 import { DetailedAthlete } from "../../domain/DetailedAthlete";
-import { LatLng } from "../../domain/LatLng";
 import { Position } from 'geojson';
 import { StravaAPIService } from "../../services/strava-api.service";
 import { combineLatest } from 'rxjs/observable/combineLatest';
-import { SnapToRoadService } from "../../services/snap-to-road.service";
-import { fromPromise } from "rxjs/observable/fromPromise";
-import { of } from "rxjs/observable/of";
 import { MapRoute } from "app/domain/MapRoute";
 import { ActivatedRoute, Router } from "@angular/router";
+import { SimplifyService, SimplifyResult } from "../../services/simplify.service";
 
 @Component({
-    selector: 'app-snap-to-road',
-    templateUrl: './snap-to-road.component.html',
+    selector: 'app-simplify',
+    templateUrl: './simplify.component.html',
 })
-export class SnapToRoadComponent implements OnInit {
+export class SimplifyComponent implements OnInit {
     public activities: DetailedActivity[] = [];
+
     private _selectedActivity: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
+    private _epsilon: BehaviorSubject<number> = new BehaviorSubject<number>(5);
     private _selectedPath: Observable<Position[]>;
-    private _snappedPath: Observable<Position[]> = of([]);
-    private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
+    private _simplifyResult: Observable<SimplifyResult>;
+    private _simplifiedPath: Observable<Position[]>;
     private _routes: Observable<MapRoute[]>;
 
     public constructor(
@@ -34,46 +33,30 @@ export class SnapToRoadComponent implements OnInit {
         private readonly httpClient: HttpClient,
         private readonly firestore: AngularFirestore,
         private readonly stravaAPIService: StravaAPIService,
-        private readonly snapToRoadService: SnapToRoadService,
         private readonly router: Router,
         private readonly route: ActivatedRoute,
+        private readonly simplifyService: SimplifyService,
     ) {
         this._selectedPath = this._selectedActivity
             .filter(activity => !!activity)
             .mergeMap(activity => this.firestore
                 .collection('athletes').doc(String(activity.athlete.id))
                 .collection('activities').doc(String(activity.id))
-                .collection('latlng').doc('low').valueChanges())
+                .collection('latlng').doc('high').valueChanges())
             .filter(o => !!o)
             .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat]))
             .defaultIfEmpty([]);
 
-        this._snappedPath =
-            combineLatest(
-                this._selectedPath,
-                this._selectedSnapType,
-            )
+        this._simplifyResult =
+            combineLatest(this._selectedPath, this._epsilon)
                 .distinctUntilChanged()
-                .mergeMap(([route, snapType]) => {
-                    switch (snapType) {
-                        case 'google-maps':
-                            return this.snapToRoadService.snapGoogleMaps(route);
-                        case 'google-maps-interpolate':
-                            return this.snapToRoadService.snapGoogleMaps(route, true);
-                        case 'mapbox':
-                            return this.snapToRoadService.snapMapbox(route, true);
-                        case 'mapbox-full':
-                            return this.snapToRoadService.snapMapbox(route, false);
-                        case 'none':
-                        default:
-                            return of([]);
-                    }
-                })
-                .defaultIfEmpty([]);
+                .map(([route, epsilon]) => this.simplifyService.simplify(route, epsilon));
+
+        this._simplifiedPath = this._simplifyResult.map(r => r.simplifiedPath);
 
         this._routes = combineLatest(
             this._selectedPath.map(path => ({ path })),
-            this._snappedPath.map(path => ({ path, color: 'blue' })),
+            this._simplifiedPath.map(path => ({ path, color: 'blue' })),
         );
     }
 
@@ -107,15 +90,19 @@ export class SnapToRoadComponent implements OnInit {
         return this._selectedActivity.value;
     }
 
-    public set selectedSnapType(snapType: string) {
-        this._selectedSnapType.next(snapType);
+    public set epsilon(e: number) {
+        this._epsilon.next(e);
     }
 
-    public get selectedSnapType(): string {
-        return this._selectedSnapType.value;
+    public get epsilon(): number {
+        return this._epsilon.value;
     }
 
     public get routes(): Observable<MapRoute[]> {
         return this._routes;
+    }
+
+    public get simplifyResult(): Observable<SimplifyResult> {
+        return this._simplifyResult;
     }
 }

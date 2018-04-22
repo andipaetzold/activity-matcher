@@ -6,6 +6,7 @@ import { ActivitiesComponent } from './components/activities/activities.componen
 import { SnapToRoadComponent } from './components/snap-to-road/snap-to-road.component';
 import { LapDetectionComponent } from './components/lap-detection/lap-detection.component';
 import { CompareRoutesComponent } from 'app/components/compare-routes/compare-routes.component';
+import { SimplifyComponent } from './components/simplify/simplify.component';
 
 
 const routes: Routes = [
@@ -24,6 +25,10 @@ const routes: Routes = [
     {
         path: 'snap-to-road',
         component: SnapToRoadComponent,
+    },
+    {
+        path: 'simplify',
+        component: SimplifyComponent,
     },
     {
         path: 'lap-detection',
