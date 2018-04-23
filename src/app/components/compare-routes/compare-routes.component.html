@@ -37,7 +37,7 @@
 
         <br> Overlapping: {{ (compareResult | async)?.percentage * 100 | round }} %
         <br> Calculation time: {{ (compareResult | async)?.calculationTime | round }} ms
-
-        <app-map [routes]="routes | async"></app-map>
     </mat-card-content>
 </mat-card>
+
+<app-map [routes]="routes | async"></app-map>

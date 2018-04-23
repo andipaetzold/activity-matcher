@@ -30,8 +30,8 @@ export class SimplifyService {
     public simplifyRec(path: Position[], epsilon: number): Position[] {
         let dmax = 0;
         let index = 0;
-        let end = path.length - 1;
 
+        const end = path.length - 1;
         const line = lineString([path[0], path[end]]);
         for (let i = 1; i <= end; ++i) {
             const pt = point(path[i]);

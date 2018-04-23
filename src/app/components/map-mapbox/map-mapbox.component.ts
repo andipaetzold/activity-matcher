@@ -12,7 +12,7 @@ export class MapMapboxComponent implements OnInit {
     private lastLayerId = 1;
     private layers: number[] = [];
     private routes: MapRoute[];
-    private allPoints: Position[];
+    private bounds: LngLatBounds;
 
     @ViewChild('map')
     public mapContainer: ElementRef;
@@ -38,7 +38,7 @@ export class MapMapboxComponent implements OnInit {
             this.map.removeSource(`layer-${id}`);
         }
         this.layers = [];
-        this.allPoints = [];
+        this.bounds = null;
     }
 
     private addLayer(layer: mapboxgl.Layer) {
@@ -60,12 +60,9 @@ export class MapMapboxComponent implements OnInit {
                 this.addLineLayer(route);
             }
         }
-        this.fitToBounds();
     }
 
     public addLineLayer(route: MapRoute) {
-        this.allPoints.push(...route.path);
-
         this.addLayer({
             "id": null,
             "type": "line",
@@ -82,15 +79,23 @@ export class MapMapboxComponent implements OnInit {
                 "line-width": route.width || 1
             }
         });
+
+        // Bounds
+        if (!this.bounds) {
+            this.bounds = new LngLatBounds(route.path[0], route.path[0]);
+        }
+
+        for (const coord of route.path) {
+            this.bounds.extend(new LngLat(coord[0], coord[1]));
+        }
     }
 
-    private fitToBounds() {
-        if (this.layers.length == 0) {
+    public fitToBounds() {
+        if (!this.bounds) {
             return;
         }
 
-        const bounds = this.allPoints.reduce((bounds, coord) => bounds.extend(new LngLat(coord[0], coord[1])), new LngLatBounds(this.allPoints[0], this.allPoints[0]));
-        this.map.fitBounds(bounds, {
+        this.map.fitBounds(this.bounds, {
             padding: 50,
             maxDuration: 1
         });

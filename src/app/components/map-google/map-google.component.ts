@@ -61,7 +61,6 @@ export class MapGoogleComponent implements OnInit {
                 this.addLineLayer(route);
             }
         }
-        this.fitToBounds();
     }
 
     public addLineLayer(route: MapRoute) {
@@ -80,7 +79,7 @@ export class MapGoogleComponent implements OnInit {
         this.lines.push(line);
     }
 
-    private fitToBounds() {
+    public fitToBounds() {
         if (this.map) {
             this.map.fitBounds(this.bounds, 50);
         }
