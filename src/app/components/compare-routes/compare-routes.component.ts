@@ -26,6 +26,7 @@ export class CompareRoutesComponent implements OnInit {
     private _selectedPath1: Observable<Position[]>;
     private _selectedPath2: Observable<Position[]>;
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
+    private _selectedCompareType: BehaviorSubject<string> = new BehaviorSubject<string>('points');
     private _routes: Observable<MapRoute[]>;
 
     private _compareResult: Observable<CompareResult>;
@@ -102,8 +103,16 @@ export class CompareRoutesComponent implements OnInit {
         this._compareResult = combineLatest(
             this._selectedPath1,
             this._selectedPath2,
-            this._maxDistance
-        ).map(([path1, path2, maxDistance]) => this.compareRoutesService.comparePoints(path1, path2, maxDistance));
+            this._maxDistance,
+            this._selectedCompareType,
+        ).map(([path1, path2, maxDistance, compareType]) => {
+            switch (compareType) {
+                case 'points':
+                    return this.compareRoutesService.comparePoints(path1, path2, maxDistance)
+                case 'points-line':
+                    return this.compareRoutesService.comparePointsWithLine(path1, path2, maxDistance)
+            }
+        });
 
         this._overlappingPaths = this._compareResult.map(r => r.overlappingPaths);
 
@@ -172,6 +181,14 @@ export class CompareRoutesComponent implements OnInit {
 
     public get selectedSnapType(): string {
         return this._selectedSnapType.value;
+    }
+
+    public set selectedCompareType(compareType: string) {
+        this._selectedCompareType.next(compareType);
+    }
+
+    public get selectedCompareType(): string {
+        return this._selectedCompareType.value;
     }
 
     public get routes(): Observable<MapRoute[]> {

@@ -22,6 +22,14 @@
         </mat-form-field>
 
         <mat-form-field>
+            <mat-select placeholder="Select compare type" [(value)]="selectedCompareType">
+                <mat-option [value]="'points'">Points</mat-option>
+                <mat-option [value]="'points-line'">Points Line</mat-option>
+                <mat-option [value]="'lines'">Lines</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field>
             <mat-select placeholder="Selected snap type" [(value)]="selectedSnapType">
                 <mat-option [value]="'none'">None</mat-option>
                 <mat-option [value]="'google-maps'">Google Maps</mat-option>
