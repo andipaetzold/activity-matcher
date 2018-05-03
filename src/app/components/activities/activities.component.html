@@ -7,7 +7,6 @@
 
     <mat-card-content>
         <mat-table #table [dataSource]="displayedActivities">
-
             <ng-container matColumnDef="name">
                 <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
                 <mat-cell *matCellDef="let element">{{ element.name }}</mat-cell>
@@ -28,6 +27,23 @@
                 <mat-cell *matCellDef="let activity">{{ (activity.elapsed_time / 60) | floor }} min</mat-cell>
             </ng-container>
 
+            <ng-container matColumnDef="speed">
+                <mat-header-cell *matHeaderCellDef>Speed</mat-header-cell>
+                <mat-cell *matCellDef="let activity">{{ activity.average_speed * 3.6 | floor }} km/h</mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="dataPoints">
+                <mat-header-cell *matHeaderCellDef>Data points</mat-header-cell>
+                <mat-cell *matCellDef="let activity">{{ activity.dataPoints }}</mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="avgDataPointGap">
+                <mat-header-cell *matHeaderCellDef>Avg. data point gap</mat-header-cell>
+                <mat-cell *matCellDef="let activity">
+                    {{ activity.distance / activity.dataPoints | floor:2 }} m | {{ activity.elapsed_time / activity.dataPoints | floor:2 }} s
+                </mat-cell>
+            </ng-container>
+
             <ng-container matColumnDef="link">
                 <mat-header-cell *matHeaderCellDef>Link</mat-header-cell>
                 <mat-cell *matCellDef="let activity">
@@ -42,5 +58,27 @@
 
         <mat-paginator [length]="activities.length" [pageSize]="10" (page)="pageChanged($event)">
         </mat-paginator>
+    </mat-card-content>
+</mat-card>
+
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>Statistics</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+        <mat-form-field>
+            <mat-select placeholder="Select activity type" [(value)]="selectedActivityType">
+                <mat-option [value]="'all'">All</mat-option>
+                <mat-option *ngFor="let activityType of activityTypes" [value]="activityType">{{ activityType }}</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <br>Activities: {{ statisticsActivities.length }}
+        <br> Total data points: {{ totalDataPoints }}
+        <br> Total distance: {{ totalDistance / 1000 | floor }} km
+        <br> Total duration: {{ totalDuration / 60 / 60 | floor }} h
+        <br> Distance between points: {{ totalDistance / totalDataPoints | floor:2 }} m
+        <br> Duration between points: {{ totalDuration / totalDataPoints | floor:2 }} s
     </mat-card-content>
 </mat-card>
