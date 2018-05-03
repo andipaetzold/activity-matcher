@@ -67,7 +67,7 @@ export class ActivitiesComponent implements OnInit {
         this.displayedActivities = this.activities.slice(event.pageIndex * event.pageSize, (event.pageIndex + 1) * event.pageSize);
     }
 
-    private get statisticsActivities(): DetailedActivity[] {
+    public get statisticsActivities(): DetailedActivity[] {
         return this.activities.filter(a => a.type === this.selectedActivityType || this.selectedActivityType === 'all');
     }
 
