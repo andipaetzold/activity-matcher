@@ -25,7 +25,7 @@
             <mat-select placeholder="Select compare type" [(value)]="selectedCompareType">
                 <mat-option [value]="'points'">Points</mat-option>
                 <mat-option [value]="'points-line'">Points Line</mat-option>
-                <mat-option [value]="'lines'">Lines</mat-option>
+                <mat-option [value]="'points-lines'">Points Lines</mat-option>
             </mat-select>
         </mat-form-field>
 
@@ -43,7 +43,7 @@
             <input matInput type="number" placeholder="Max distance (in m)" [(ngModel)]="maxDistance" min="1" max="100" step="1">
         </mat-form-field>
 
-        <br> Overlapping: {{ (compareResult | async)?.percentage * 100 | round }} %
+        <br> Overlapping: {{ (overlappingPercentage | async) * 100 | round }} %
         <br> Calculation time: {{ (compareResult | async)?.calculationTime | round }} ms
     </mat-card-content>
 </mat-card>

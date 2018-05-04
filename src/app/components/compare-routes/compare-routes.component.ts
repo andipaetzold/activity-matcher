@@ -13,6 +13,10 @@ import { of } from "rxjs/observable/of";
 import { MapRoute } from "app/domain/MapRoute";
 import { Router, ActivatedRoute } from "@angular/router";
 import { CompareRoutesService, CompareResult } from "../../services/compare-routes.service";
+import length from '@turf/length';
+import { point, lineString } from '@turf/helpers';
+import distance from '@turf/distance';
+import lineSliceAlong from '@turf/line-slice-along';
 
 @Component({
     selector: 'app-compare-routes',
@@ -30,7 +34,11 @@ export class CompareRoutesComponent implements OnInit {
     private _routes: Observable<MapRoute[]>;
 
     private _compareResult: Observable<CompareResult>;
-    private _overlappingPaths: Observable<Position[][]>;
+    private _overlappingPaths: Observable<[Position[], Position[]][]>;
+
+    private _totalDistance: Observable<number>;
+    private _overlappingDistance: Observable<number>;
+    private _overlappingPercentage: Observable<number>;
 
     private _maxDistance: BehaviorSubject<number> = new BehaviorSubject<number>(5);
 
@@ -111,20 +119,51 @@ export class CompareRoutesComponent implements OnInit {
                     return this.compareRoutesService.comparePoints(path1, path2, maxDistance)
                 case 'points-line':
                     return this.compareRoutesService.comparePointsWithLine(path1, path2, maxDistance)
+                case 'points-lines':
+                    return this.compareRoutesService.comparePointsWithLines(path1, path2, maxDistance)
             }
         });
 
-        this._overlappingPaths = this._compareResult.map(r => r.overlappingPaths);
+        this._overlappingPaths = combineLatest(
+            this._compareResult.map(r => r.overlappingPaths),
+            this._selectedPath1,
+            this._selectedPath2,
+        ).map(
+            ([result, path1, path2]) =>
+                result.map((r): [Position[], Position[]] => ([
+                    this.linePart(path1, r.route1.from.point, r.route1.from.part, r.route1.to.point, r.route1.to.part),
+                    this.linePart(path2, r.route2.from.point, r.route2.from.part, r.route2.to.point, r.route2.to.part),
+                ]))
+        ).map(paths => paths.filter(pair => pair[0].length == 2 && pair[1].length == 2));
 
         this._routes = combineLatest(
             this._selectedPath1,
             this._selectedPath2,
-            this._overlappingPaths
-        ).map(([selectedPath1, selectedPath2, overlappingPaths]) => [
-            { path: selectedPath1, color: 'red' },
-            { path: selectedPath2, color: 'green' },
-            ...overlappingPaths.map(path => ({ path, color: 'blue', width: 3 })),
-        ]);
+            this._overlappingPaths.defaultIfEmpty([])
+        ).map(([selectedPath1, selectedPath2, overlappingPaths]) => {
+            const routes: MapRoute[] = [
+                { path: selectedPath1, color: 'red' },
+                { path: selectedPath2, color: 'green' },
+                ...overlappingPaths.map(pair => ({ path: pair[0], color: 'blue', width: 2 })),
+                ...overlappingPaths.map(pair => ({ path: pair[1], color: 'purple', width: 2 })),
+            ];
+
+            return routes;
+        });
+
+        this._totalDistance = combineLatest(this._selectedPath1, this._selectedPath2)
+            .map(([path1, path2]) => [lineString(path1), lineString(path2)])
+            .map(([path1, path2]) => length(path1) + length(path2));
+
+        this._overlappingDistance = this._overlappingPaths
+            .map(paths => paths.map(pair => [lineString(pair[0]), lineString(pair[1])]))
+            .map(paths => paths.map(pair => length(pair[0]) + length(pair[1])))
+            .map(paths => paths.reduce((a, b) => a + b, 0));
+
+        this._overlappingPercentage = combineLatest(
+            this._totalDistance,
+            this._overlappingDistance
+        ).map(([total, overlapping]) => overlapping / total);
     }
 
     public async ngOnInit(): Promise<void> {
@@ -205,5 +244,36 @@ export class CompareRoutesComponent implements OnInit {
 
     public get compareResult(): Observable<CompareResult> {
         return this._compareResult;
+    }
+
+    public get overlappingPercentage(): Observable<number> {
+        return this._overlappingPercentage;
+    }
+
+    private linePart(path, from: number, fromPart: number, to: number, toPart: number): Position[] {
+        if (from === to && fromPart >= toPart) {
+            return [];
+        }
+
+        const pointIds = [];
+        for (let i = from; i <= to + 1; ++i) {
+            pointIds.push(i);
+        }
+
+        const line = lineString(pointIds.map(id => path[id]));
+        const lineLength = length(line);
+
+        const firstLine = lineString(pointIds.slice(0, 2).map(id => path[id]));
+        const firstLineLength = length(firstLine);
+        const partFirstLine = fromPart * firstLineLength;
+
+        const lastLine = lineString(pointIds.slice(-2).map(id => path[id]));
+        const lastLineLength = length(lastLine);
+        const partLastLine = (1 - toPart) * lastLineLength;
+
+        const sliceFrom = partFirstLine;
+        const sliceTo = lineLength - partLastLine;
+
+        return lineSliceAlong(line, sliceFrom, sliceTo).geometry.coordinates;
     }
 }
