@@ -14,12 +14,17 @@
         </mat-form-field>
 
         <mat-form-field>
-            <input matInput type="number" placeholder="Epsilon (in m)" [(ngModel)]="epsilon" min="1" max="100" step="1">
+            <input matInput type="number" placeholder="Epsilon (in m)" [(ngModel)]="epsilon" min="0" max="100" step="1">
         </mat-form-field>
 
         <br> Original points: {{ (simplifyResult | async)?.originalPoints }}
-        <br> SimplifiedPoints points: {{ (simplifyResult | async)?.simplifiedPoints }}
-        <br> Percentage: {{ (simplifyResult | async)?.percentage * 100 | round }} %
+        <br> Simplified points: {{ (simplifyResult | async)?.simplifiedPoints }}
+        <br> Percentage: {{ (simplifyResult | async)?.percentagePoints * 100 | round:2 }} %
+        <br>
+        <br> Original distance: {{ (simplifyResult | async)?.originalDistance | round:2 }} km
+        <br> Simplified distance: {{ (simplifyResult | async)?.simplifiedDistance | round:2 }} km
+        <br> Percentage: {{ (simplifyResult | async)?.percentageDistance * 100 | round:2 }} %
+        <br>
         <br> Calculation time: {{ (simplifyResult | async)?.calculationTime | round }} ms
     </mat-card-content>
 </mat-card>
