@@ -18,6 +18,8 @@ import { point, lineString } from '@turf/helpers';
 import distance from '@turf/distance';
 import lineSliceAlong from '@turf/line-slice-along';
 
+type QualityType = 'low' | 'medium' | 'high';
+
 @Component({
     selector: 'app-compare-routes',
     templateUrl: './compare-routes.component.html',
@@ -29,6 +31,7 @@ export class CompareRoutesComponent implements OnInit {
     private _selectedActivity2: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
     private _selectedPath1: Observable<Position[]>;
     private _selectedPath2: Observable<Position[]>;
+    private _selectedQuality: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
     private _selectedCompareType: BehaviorSubject<string> = new BehaviorSubject<string>('points');
     private _routes: Observable<MapRoute[]>;
@@ -54,58 +57,36 @@ export class CompareRoutesComponent implements OnInit {
     ) {
         this._selectedPath1 =
             combineLatest(
-                this._selectedActivity1
-                    .filter(activity => !!activity)
-                    .mergeMap(activity => this.firestore
+                combineLatest(
+                    this._selectedActivity1.filter(a => !!a),
+                    this._selectedQuality,
+                )
+                    .mergeMap(([activity, quality]) => this.firestore
                         .collection('athletes').doc(String(activity.athlete.id))
                         .collection('activities').doc(String(activity.id))
-                        .collection('latlng').doc('low').valueChanges())
+                        .collection('latlng').doc(quality).valueChanges())
                     .filter(o => !!o)
                     .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
                 this._selectedSnapType,
-            ).mergeMap(([route, snapType]) => {
-                switch (snapType) {
-                    case 'google-maps':
-                        return this.snapToRoadService.snapGoogleMaps(route);
-                    case 'google-maps-interpolate':
-                        return this.snapToRoadService.snapGoogleMaps(route, true);
-                    case 'mapbox':
-                        return this.snapToRoadService.snapMapbox(route, true);
-                    case 'mapbox-full':
-                        return this.snapToRoadService.snapMapbox(route, false);
-                    case 'none':
-                    default:
-                        return of(route);
-                }
-            })
+            )
+                .mergeMap(([route, snapType]) => this.convertRoute(route, snapType))
                 .defaultIfEmpty([]);
 
         this._selectedPath2 =
             combineLatest(
-                this._selectedActivity2
-                    .filter(activity => !!activity)
-                    .mergeMap(activity => this.firestore
+                combineLatest(
+                    this._selectedActivity2.filter(a => !!a),
+                    this._selectedQuality,
+                )
+                    .mergeMap(([activity, quality]) => this.firestore
                         .collection('athletes').doc(String(activity.athlete.id))
                         .collection('activities').doc(String(activity.id))
                         .collection('latlng').doc('low').valueChanges())
                     .filter(o => !!o)
                     .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
                 this._selectedSnapType,
-            ).mergeMap(([route, snapType]) => {
-                switch (snapType) {
-                    case 'google-maps':
-                        return this.snapToRoadService.snapGoogleMaps(route);
-                    case 'google-maps-interpolate':
-                        return this.snapToRoadService.snapGoogleMaps(route, true);
-                    case 'mapbox':
-                        return this.snapToRoadService.snapMapbox(route, true);
-                    case 'mapbox-full':
-                        return this.snapToRoadService.snapMapbox(route, false);
-                    case 'none':
-                    default:
-                        return of(route);
-                }
-            })
+            )
+                .mergeMap(([route, snapType]) => this.convertRoute(route, snapType))
                 .defaultIfEmpty([]);
 
         this._compareResult = combineLatest(
@@ -166,6 +147,22 @@ export class CompareRoutesComponent implements OnInit {
         ).map(([total, overlapping]) => overlapping / total);
     }
 
+    private convertRoute(route: Position[], snapType: string): Promise<Position[]> {
+        switch (snapType) {
+            case 'google-maps':
+                return this.snapToRoadService.snapGoogleMaps(route);
+            case 'google-maps-interpolate':
+                return this.snapToRoadService.snapGoogleMaps(route, true);
+            case 'mapbox':
+                return this.snapToRoadService.snapMapbox(route, true);
+            case 'mapbox-full':
+                return this.snapToRoadService.snapMapbox(route, false);
+            case 'none':
+            default:
+                return Promise.resolve(route);
+        }
+    }
+
     public async ngOnInit(): Promise<void> {
         await this.stravaAuthService.refreshToken();
 
@@ -212,6 +209,14 @@ export class CompareRoutesComponent implements OnInit {
 
     public get selectedActivity2(): DetailedActivity {
         return this._selectedActivity2.value;
+    }
+
+    public set selectedQuality(quality: QualityType) {
+        this._selectedQuality.next(quality);
+    }
+
+    public get selectedQuality(): QualityType {
+        return this._selectedQuality.value;
     }
 
     public set selectedSnapType(snapType: string) {
