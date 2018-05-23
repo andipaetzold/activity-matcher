@@ -16,7 +16,6 @@ import { CompareRoutesService, CompareResult } from "../../services/compare-rout
 import length from '@turf/length';
 import { point, lineString } from '@turf/helpers';
 import distance from '@turf/distance';
-import lineSliceAlong from '@turf/line-slice-along';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -110,12 +109,11 @@ export class CompareRoutesComponent implements OnInit {
             this._selectedPath1,
             this._selectedPath2,
         ).map(
-            ([result, path1, path2]) =>
-                result.map((r): [Position[], Position[]] => ([
-                    this.linePart(path1, r.route1.from.point, r.route1.from.part, r.route1.to.point, r.route1.to.part),
-                    this.linePart(path2, r.route2.from.point, r.route2.from.part, r.route2.to.point, r.route2.to.part),
-                ]))
-        ).map(paths => paths.filter(pair => pair[0].length == 2 && pair[1].length == 2));
+            ([result, path1, path2]) => result.map((r): [Position[], Position[]] => ([
+                this.compareRoutesService.linePart(path1, r.route1.from.point, r.route1.from.part, r.route1.to.point, r.route1.to.part),
+                this.compareRoutesService.linePart(path2, r.route2.from.point, r.route2.from.part, r.route2.to.point, r.route2.to.part),
+            ]))
+        ).map(paths => paths.filter(pair => pair[0].length >= 2 && pair[1].length >= 2));
 
         this._routes = combineLatest(
             this._selectedPath1,
@@ -253,32 +251,5 @@ export class CompareRoutesComponent implements OnInit {
 
     public get overlappingPercentage(): Observable<number> {
         return this._overlappingPercentage;
-    }
-
-    private linePart(path, from: number, fromPart: number, to: number, toPart: number): Position[] {
-        if (from === to && fromPart >= toPart) {
-            return [];
-        }
-
-        const pointIds = [];
-        for (let i = from; i <= to + 1; ++i) {
-            pointIds.push(i);
-        }
-
-        const line = lineString(pointIds.map(id => path[id]));
-        const lineLength = length(line);
-
-        const firstLine = lineString(pointIds.slice(0, 2).map(id => path[id]));
-        const firstLineLength = length(firstLine);
-        const partFirstLine = fromPart * firstLineLength;
-
-        const lastLine = lineString(pointIds.slice(-2).map(id => path[id]));
-        const lastLineLength = length(lastLine);
-        const partLastLine = (1 - toPart) * lastLineLength;
-
-        const sliceFrom = partFirstLine;
-        const sliceTo = lineLength - partLastLine;
-
-        return lineSliceAlong(line, sliceFrom, sliceTo).geometry.coordinates;
     }
 }
