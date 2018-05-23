@@ -80,7 +80,7 @@ export class CompareRoutesComponent implements OnInit {
                     .mergeMap(([activity, quality]) => this.firestore
                         .collection('athletes').doc(String(activity.athlete.id))
                         .collection('activities').doc(String(activity.id))
-                        .collection('latlng').doc('low').valueChanges())
+                        .collection('latlng').doc(quality).valueChanges())
                     .filter(o => !!o)
                     .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
                 this._selectedSnapType,

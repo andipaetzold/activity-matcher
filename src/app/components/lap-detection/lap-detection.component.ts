@@ -13,6 +13,8 @@ import { of } from "rxjs/observable/of";
 import { MapRoute } from "../../domain/MapRoute";
 import { Router, ActivatedRoute } from "@angular/router";
 
+type QualityType = 'low' | 'medium' | 'high';
+
 @Component({
     selector: 'app-lap-detection',
     templateUrl: './lap-detection.component.html',
@@ -22,8 +24,10 @@ export class LapDetectionComponent implements OnInit {
 
     private _selectedActivity: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
     private _selectedPath: Observable<Position[]>;
+    private _selectedQuality: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
     private _routes: Observable<MapRoute[]>;
+    private _maxDistance: BehaviorSubject<number> = new BehaviorSubject<number>(5);
 
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
@@ -37,12 +41,14 @@ export class LapDetectionComponent implements OnInit {
 
         this._selectedPath =
             combineLatest(
-                this._selectedActivity
-                    .filter(activity => !!activity)
-                    .mergeMap(activity => this.firestore
+                combineLatest(
+                    this._selectedActivity.filter(a => !!a),
+                    this._selectedQuality,
+                )
+                    .mergeMap(([activity, quality]) => this.firestore
                         .collection('athletes').doc(String(activity.athlete.id))
                         .collection('activities').doc(String(activity.id))
-                        .collection('latlng').doc('low').valueChanges())
+                        .collection('latlng').doc(quality).valueChanges())
                     .filter(o => !!o)
                     .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
                 this._selectedSnapType,
@@ -96,12 +102,28 @@ export class LapDetectionComponent implements OnInit {
         return this._selectedActivity.value;
     }
 
+    public set selectedQuality(quality: QualityType) {
+        this._selectedQuality.next(quality);
+    }
+
+    public get selectedQuality(): QualityType {
+        return this._selectedQuality.value;
+    }
+
     public set selectedSnapType(snapType: string) {
         this._selectedSnapType.next(snapType);
     }
 
     public get selectedSnapType(): string {
         return this._selectedSnapType.value;
+    }
+
+    public get maxDistance(): number {
+        return this._maxDistance.value;
+    }
+
+    public set maxDistance(d: number) {
+        this._maxDistance.next(d);
     }
 
     public get routes(): Observable<MapRoute[]> {
