@@ -12,6 +12,7 @@ import { Position } from 'geojson';
 import { of } from "rxjs/observable/of";
 import { MapRoute } from "../../domain/MapRoute";
 import { Router, ActivatedRoute } from "@angular/router";
+import { LapDetectionService, Lap } from "../../services/lap-detection.service";
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -22,12 +23,17 @@ type QualityType = 'low' | 'medium' | 'high';
 export class LapDetectionComponent implements OnInit {
     public activities: DetailedActivity[] = [];
 
-    private _selectedActivity: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
-    private _selectedPath: Observable<Position[]>;
-    private _selectedQuality: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
-    private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
-    private _routes: Observable<MapRoute[]>;
-    private _maxDistance: BehaviorSubject<number> = new BehaviorSubject<number>(5);
+    private selectedActivity$: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
+    private selectedPath$: Observable<Position[]>;
+    private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
+    private selectedSnapType$: BehaviorSubject<string> = new BehaviorSubject<string>('none');
+    private routes$: Observable<MapRoute[]>;
+    private maxDistance$: BehaviorSubject<number> = new BehaviorSubject<number>(5);
+    private minLength$: BehaviorSubject<number> = new BehaviorSubject<number>(200);
+
+    private potentialLaps$: BehaviorSubject<Lap[]> = new BehaviorSubject<Lap[]>([]);
+    private selectedPotentialLap$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
+    private displayedPotentialLap$: BehaviorSubject<Position[]> = new BehaviorSubject<Position[]>([]);
 
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
@@ -37,13 +43,14 @@ export class LapDetectionComponent implements OnInit {
         private readonly snapToRoadService: SnapToRoadService,
         private readonly router: Router,
         private readonly route: ActivatedRoute,
+        private readonly lapDetectionService: LapDetectionService,
     ) {
 
-        this._selectedPath =
+        this.selectedPath$ =
             combineLatest(
                 combineLatest(
-                    this._selectedActivity.filter(a => !!a),
-                    this._selectedQuality,
+                    this.selectedActivity$.filter(a => !!a),
+                    this.selectedQuality$,
                 )
                     .mergeMap(([activity, quality]) => this.firestore
                         .collection('athletes').doc(String(activity.athlete.id))
@@ -51,7 +58,7 @@ export class LapDetectionComponent implements OnInit {
                         .collection('latlng').doc(quality).valueChanges())
                     .filter(o => !!o)
                     .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
-                this._selectedSnapType,
+                this.selectedSnapType$,
             ).mergeMap(([route, snapType]) => {
                 switch (snapType) {
                     case 'google-maps':
@@ -69,7 +76,33 @@ export class LapDetectionComponent implements OnInit {
             })
                 .defaultIfEmpty([]);
 
-        this._routes = this._selectedPath.map(path => [{ path }]);
+        combineLatest(
+            this.selectedPath$,
+            this.maxDistance$,
+            this.minLength$
+        ).map(([path, maxDistance, minLength]) => this.lapDetectionService.findLaps(path, maxDistance, minLength))
+            .subscribe(this.potentialLaps$);
+
+        combineLatest(
+            combineLatest(
+                this.potentialLaps$,
+                this.selectedPotentialLap$
+            )
+                .map(([potentialLaps, selectedPotentialLap]) => potentialLaps[selectedPotentialLap])
+                .filter(lap => !!lap),
+            this.selectedPath$
+        )
+            .map(([potentialLap, path]) => path.slice(potentialLap.from - 1, potentialLap.to))
+            .subscribe(this.displayedPotentialLap$);
+
+        this.routes$ = combineLatest(
+            this.selectedPath$,
+            this.displayedPotentialLap$
+        )
+            .map(([path, potentialLap]) => [
+                { path },
+                { path: potentialLap, color: 'blue', width: 2 }
+            ]);
     }
 
     public async ngOnInit(): Promise<void> {
@@ -89,7 +122,7 @@ export class LapDetectionComponent implements OnInit {
     }
 
     public set selectedActivity(activity: DetailedActivity) {
-        this._selectedActivity.next(activity);
+        this.selectedActivity$.next(activity);
         this.router.navigate([], {
             queryParams: {
                 ...this.route.snapshot.queryParams,
@@ -99,34 +132,50 @@ export class LapDetectionComponent implements OnInit {
     }
 
     public get selectedActivity(): DetailedActivity {
-        return this._selectedActivity.value;
+        return this.selectedActivity$.value;
     }
 
     public set selectedQuality(quality: QualityType) {
-        this._selectedQuality.next(quality);
+        this.selectedQuality$.next(quality);
     }
 
     public get selectedQuality(): QualityType {
-        return this._selectedQuality.value;
+        return this.selectedQuality$.value;
     }
 
     public set selectedSnapType(snapType: string) {
-        this._selectedSnapType.next(snapType);
+        this.selectedSnapType$.next(snapType);
     }
 
     public get selectedSnapType(): string {
-        return this._selectedSnapType.value;
+        return this.selectedSnapType$.value;
     }
 
     public get maxDistance(): number {
-        return this._maxDistance.value;
+        return this.maxDistance$.value;
     }
 
     public set maxDistance(d: number) {
-        this._maxDistance.next(d);
+        this.maxDistance$.next(d);
+    }
+
+    public get minLength(): number {
+        return this.minLength$.value;
+    }
+
+    public set minLength(d: number) {
+        this.minLength$.next(d);
+    }
+
+    public get selectedPotentialLap(): number {
+        return this.selectedPotentialLap$.value;
+    }
+
+    public set selectedPotentialLap(d: number) {
+        this.selectedPotentialLap$.next(d);
     }
 
     public get routes(): Observable<MapRoute[]> {
-        return this._routes;
+        return this.routes$;
     }
 }

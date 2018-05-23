@@ -36,6 +36,7 @@ import { CompareRoutesComponent } from 'app/components/compare-routes/compare-ro
 import { CompareRoutesService } from 'app/services/compare-routes.service';
 import { SimplifyComponent } from './components/simplify/simplify.component';
 import { SimplifyService } from './services/simplify.service';
+import { LapDetectionService } from 'app/services/lap-detection.service';
 
 @NgModule({
     declarations: [
@@ -58,6 +59,7 @@ import { SimplifyService } from './services/simplify.service';
         StravaAPIService,
         CompareRoutesService,
         SimplifyService,
+        LapDetectionService,
     ],
     imports: [
         AppRoutingModule,

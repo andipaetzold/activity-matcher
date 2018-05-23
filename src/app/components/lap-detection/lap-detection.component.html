@@ -33,6 +33,14 @@
         <mat-form-field>
             <input matInput type="number" placeholder="Max distance (in m)" [(ngModel)]="maxDistance" min="1" max="100" step="1">
         </mat-form-field>
+
+        <mat-form-field>
+            <input matInput type="number" placeholder="Min length (in m)" [(ngModel)]="minLength" min="10" step="10">
+        </mat-form-field>
+
+        <mat-form-field>
+            <input matInput type="number" placeholder="Selected potential lap" [(ngModel)]="selectedPotentialLap" step="1">
+        </mat-form-field>
     </mat-card-content>
 </mat-card>
 
