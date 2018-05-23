@@ -124,44 +124,48 @@ export class CompareRoutesService {
 
         const timeBegin = performance.now();
         for (let indexPath1 = 0; indexPath1 < path1.length - 1; ++indexPath1) {
-            const orgStartPath1 = pathCoords1[indexPath1];
-            const orgStopPath1 = pathCoords1[indexPath1 + 1];
-            const line1 = lineString([path2[indexPath1], path2[indexPath1 + 1]]);
+            const startPath1 = pathCoords1[indexPath1];
+            const stopPath1 = pathCoords1[indexPath1 + 1];
 
-            for (let indexPath2 = 0; indexPath2 < path2.length - 1; ++indexPath2) {
-                const orgStartPath2 = pathCoords2[indexPath2];
-                const orgStopPath2 = pathCoords2[indexPath2 + 1];
-                const line2 = lineString([path2[indexPath2], path2[indexPath2 + 1]]);
+            for (let indexPath2 = 0; indexPath2 < path2.length - 2; ++indexPath2) {
+                const line1 = lineString([path2[indexPath2], path2[indexPath2 + 1]]);
+                const line2 = lineString([path2[indexPath2 + 1], path2[indexPath2 + 2]]);
 
-                const startPath2 = nearestPointOnLine(line2, orgStartPath1);
-                const stopPath2 = nearestPointOnLine(line2, orgStopPath1);
+                const startPath2 = nearestPointOnLine(line1, startPath1, distanceOptions);
+                const distanceToStart = distance(startPath1, startPath2, distanceOptions);
 
-                const startPath1 = nearestPointOnLine(line1, startPath2);
-                const stopPath1 = nearestPointOnLine(line1, stopPath2);
+                const stopPath2_1 = nearestPointOnLine(line1, stopPath1, distanceOptions);
+                const stopPath2_2 = nearestPointOnLine(line2, stopPath1, distanceOptions);
 
-                const distanceBetweenStarts = distance(startPath1, startPath2, distanceOptions);
-                const distanceBetweenStops = distance(stopPath2, stopPath2, distanceOptions);
+                const distanceToStop1 = distance(stopPath2_1, stopPath1, distanceOptions);
+                const distanceToStop2 = distance(stopPath2_2, stopPath1, distanceOptions);
 
-                if (distanceBetweenStarts < maxDistance && distanceBetweenStops < maxDistance) {
+                const stopPath2 = distanceToStop1 < distanceToStop2 ? stopPath2_1 : stopPath2_2;
+                const distanceToStop = Math.min(distanceToStop1, distanceToStop2);
+
+                if (distanceToStart < maxDistance && distanceToStop < maxDistance) {
+                    const sameLine = distanceToStop === distanceToStop1;
+                    const route2StopId = indexPath2 + (sameLine ? 0 : 1);
+
                     overlappingPaths.push({
                         route1: {
                             from: {
                                 point: indexPath1,
-                                part: Math.min(0.99, distance(orgStartPath1, startPath1) / length(line1))
+                                part: 0,
                             },
                             to: {
-                                point: indexPath1,
-                                part: Math.min(0.99, distance(orgStartPath1, stopPath1) / length(line1))
+                                point: indexPath1 + 1,
+                                part: 0
                             },
                         },
                         route2: {
                             from: {
                                 point: indexPath2,
-                                part: Math.min(0.99, distance(orgStartPath2, startPath2) / length(line2))
+                                part: distance(path2[indexPath2], startPath2) / length(line1),
                             },
                             to: {
-                                point: indexPath2,
-                                part: Math.min(0.99, distance(orgStartPath2, stopPath2) / length(line2))
+                                point: route2StopId,
+                                part: distance(path2[route2StopId], stopPath2) / length(sameLine ? line1 : line2)
                             },
                         },
                     });
@@ -173,8 +177,8 @@ export class CompareRoutesService {
         if (merge) {
             const newOverlappingPaths: OverlappingPath[] = [];
             opLoop: for (let i1 = 0; i1 < overlappingPaths.length; ++i1) {
+                const op1 = overlappingPaths[i1];
                 for (let i2 = i1 + 1; i2 < overlappingPaths.length; ++i2) {
-                    const op1 = overlappingPaths[i1];
                     const op2 = overlappingPaths[i2];
 
                     const linePart1 = this.linePart(path1, op1.route1.to.point, op1.route1.to.part, op2.route1.from.point, op2.route1.from.part);
@@ -201,15 +205,18 @@ export class CompareRoutesService {
                         continue opLoop;
                     }
                 }
+
+                newOverlappingPaths.push(op1);
             }
 
+            console.log(overlappingPaths, newOverlappingPaths);
             overlappingPaths = newOverlappingPaths;
         }
 
         const timeEnd = performance.now();
 
         return {
-            overlappingPaths,
+            overlappingPaths: [],
             calculationTime: timeEnd - timeBegin,
         };
     }
