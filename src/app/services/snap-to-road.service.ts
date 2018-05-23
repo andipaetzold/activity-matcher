@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { environment } from "environments/environment";
 import { Position } from 'geojson';
-import { decode } from 'polyline';
+import { JSONP_ERR_WRONG_RESPONSE_TYPE } from "@angular/common/http/src/jsonp";
 
 @Injectable()
 export class SnapToRoadService {
@@ -35,7 +35,8 @@ export class SnapToRoadService {
         const path = route.slice(0, 100).map(p => p.join(',')).join(';');
         const response: any = await this.httpClient.get(`https://api.mapbox.com/matching/v5/mapbox/walking/${path}?access_token=${environment.mapbox.accessToken}&overview=${simplified ? 'simplified' : 'full'}`).toPromise();
 
-        const highestConfidence = Math.max(...response.matchings.map((m: any) => m.confidence));
-        return decode(response.matchings.find((m: any) => m.confidence === highestConfidence).geometry).map(p => p.reverse());
+        return response.tracepoints
+            .filter(p => !!p)
+            .map(p => p.location);
     }
 }

@@ -16,6 +16,8 @@ import { fromPromise } from "rxjs/observable/fromPromise";
 import { of } from "rxjs/observable/of";
 import { MapRoute } from "app/domain/MapRoute";
 import { ActivatedRoute, Router } from "@angular/router";
+import length from '@turf/length';
+import { lineString } from '@turf/helpers';
 
 @Component({
     selector: 'app-snap-to-road',
@@ -70,6 +72,27 @@ export class SnapToRoadComponent implements OnInit {
                     }
                 })
                 .defaultIfEmpty([]);
+
+        combineLatest(
+            this._selectedPath,
+            this._snappedPath,
+        ).subscribe(([selectedPath, snappedPath]) => {
+            console.group();
+
+            console.group('Original');
+            console.log(selectedPath.length);
+            console.log(length(lineString(selectedPath)));
+            console.groupEnd();
+
+            if (snappedPath.length) {
+                console.group('Snapped');
+                console.log(snappedPath.length);
+                console.log(length(lineString(snappedPath)));
+                console.groupEnd();
+            }
+
+            console.groupEnd();
+        });
 
         this._routes = combineLatest(
             this._selectedPath.map(path => ({ path })),
