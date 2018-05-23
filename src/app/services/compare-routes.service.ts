@@ -33,7 +33,7 @@ const distanceOptions = {
 
 @Injectable()
 export class CompareRoutesService {
-    public comparePoints(path1: Position[], path2: Position[], maxDistance: number = 0.005): CompareResult {
+    public comparePoints(path1: Position[], path2: Position[], maxDistance: number): CompareResult {
         const pathCoords1 = path1.map(p => point(p));
         const pathCoords2 = path2.map(p => point(p));
 
@@ -67,7 +67,7 @@ export class CompareRoutesService {
         };
     }
 
-    public comparePointsWithLine(path1: Position[], path2: Position[], maxDistance: number = 0.005): CompareResult {
+    public comparePointsWithLine(path1: Position[], path2: Position[], maxDistance: number): CompareResult {
         const pathCoords1 = path1.map(p => point(p));
         const pathCoords2 = path2.map(p => point(p));
 
@@ -116,7 +116,7 @@ export class CompareRoutesService {
         };
     }
 
-    public comparePointsWithLines(path1: Position[], path2: Position[], maxDistance: number = 0.005, merge: boolean = true): CompareResult {
+    public comparePointsWithLines(path1: Position[], path2: Position[], maxDistance: number, merge: boolean = true): CompareResult {
         const pathCoords1 = path1.map(p => point(p));
         const pathCoords2 = path2.map(p => point(p));
 
@@ -217,6 +217,104 @@ export class CompareRoutesService {
 
         return {
             overlappingPaths: [],
+            calculationTime: timeEnd - timeBegin,
+        };
+    }
+
+    public comparePointsWithLines2(path1: Position[], path2: Position[], maxDistance: number): CompareResult {
+        const overlappingPaths: OverlappingPath[] = [];
+        const timeBegin = performance.now();
+
+        for (let pathIndex1 = 0; pathIndex1 < path1.length - 1; ++pathIndex1) {
+            const back1 = () => path1[pathIndex1];
+            const backPoint1 = () => point(back1());
+            const front1 = () => path1[pathIndex1 + 1];
+            const frontPoint1 = () => point(front1());
+            const line1 = () => lineString([back1(), front1()]);
+
+            for (let pathIndex2 = 0; pathIndex2 < path2.length - 1; ++pathIndex2) {
+                const back2 = () => path2[pathIndex2];
+                const backPoint2 = () => point(back2());
+                const front2 = () => path2[pathIndex2 + 1];
+                const frontPoint2 = () => point(front2());
+                const line2 = () => lineString([back2(), front2()]);
+
+                let pointOnLine1 = nearestPointOnLine(line1(), back2());
+                let pointOnLine2 = nearestPointOnLine(line2(), back1());
+
+                let distanceToLine1 = distance(back2(), pointOnLine1, distanceOptions);
+                let distanceToLine2 = distance(back1(), pointOnLine2, distanceOptions);
+
+                if (Math.min(distanceToLine1, distanceToLine2) > maxDistance) {
+                    continue;
+                }
+
+                let route1From: ComparePoint;
+                let route2From: ComparePoint;
+                if (distanceToLine1 < distanceToLine2) {
+                    route1From = {
+                        point: pathIndex1,
+                        part: distance(back1(), pointOnLine1, distanceOptions) / length(line1(), distanceOptions)
+                    };
+                    route2From = { point: pathIndex2, part: 0 };
+                } else {
+                    route1From = { point: pathIndex1, part: 0 };
+                    route2From = {
+                        point: pathIndex2,
+                        part: distance(back2(), pointOnLine2, distanceOptions) / length(line2(), distanceOptions)
+                    };
+                }
+
+                let route1To: ComparePoint;
+                let route2To: ComparePoint;
+                while (pathIndex1 < path1.length - 1 && pathIndex2 < path1.length - 1) {
+                    pointOnLine1 = nearestPointOnLine(line1(), front2());
+                    pointOnLine2 = nearestPointOnLine(line2(), front1());
+
+                    distanceToLine1 = distance(front2(), pointOnLine1, distanceOptions);
+                    distanceToLine2 = distance(front1(), pointOnLine2, distanceOptions);
+
+                    if (Math.min(distanceToLine1, distanceToLine2) > maxDistance) {
+                        break;
+                    }
+
+                    if (distanceToLine1 < distanceToLine2) {
+                        route1To = {
+                            point: pathIndex1,
+                            part: distance(back1(), pointOnLine1, distanceOptions) / length(line1(), distanceOptions)
+                        };
+                        route2To = { point: pathIndex2, part: 0 };
+
+                        ++pathIndex2;
+                    } else {
+                        route1To = { point: pathIndex1, part: 0 };
+                        route2To = {
+                            point: pathIndex2,
+                            part: distance(back2(), pointOnLine2, distanceOptions) / length(line2(), distanceOptions)
+                        };
+
+                        ++pathIndex1;
+                    }
+                }
+
+                if (route1To && route2To) {
+                    overlappingPaths.push({
+                        route1: {
+                            from: route1From,
+                            to: route1To,
+                        },
+                        route2: {
+                            from: route2From,
+                            to: route2To,
+                        }
+                    });
+                }
+            }
+        }
+
+        const timeEnd = performance.now();
+        return {
+            overlappingPaths,
             calculationTime: timeEnd - timeBegin,
         };
     }

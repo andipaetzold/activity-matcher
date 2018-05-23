@@ -96,11 +96,13 @@ export class CompareRoutesComponent implements OnInit {
         ).map(([path1, path2, maxDistance, compareType]) => {
             switch (compareType) {
                 case 'points':
-                    return this.compareRoutesService.comparePoints(path1, path2, maxDistance)
+                    return this.compareRoutesService.comparePoints(path1, path2, maxDistance);
                 case 'points-line':
-                    return this.compareRoutesService.comparePointsWithLine(path1, path2, maxDistance)
+                    return this.compareRoutesService.comparePointsWithLine(path1, path2, maxDistance);
                 case 'points-lines':
-                    return this.compareRoutesService.comparePointsWithLines(path1, path2, maxDistance)
+                    return this.compareRoutesService.comparePointsWithLines(path1, path2, maxDistance);
+                case 'points-lines-2':
+                    return this.compareRoutesService.comparePointsWithLines2(path1, path2, maxDistance);
             }
         });
 
