@@ -116,7 +116,7 @@ export class CompareRoutesService {
         };
     }
 
-    public comparePointsWithLines(path1: Position[], path2: Position[], maxDistance: number, merge: boolean = true): CompareResult {
+    public comparePointsWithLines(path1: Position[], path2: Position[], maxDistance: number): CompareResult {
         const pathCoords1 = path1.map(p => point(p));
         const pathCoords2 = path2.map(p => point(p));
 
@@ -174,49 +174,10 @@ export class CompareRoutesService {
             }
         }
 
-        if (merge) {
-            const newOverlappingPaths: OverlappingPath[] = [];
-            opLoop: for (let i1 = 0; i1 < overlappingPaths.length; ++i1) {
-                const op1 = overlappingPaths[i1];
-                for (let i2 = i1 + 1; i2 < overlappingPaths.length; ++i2) {
-                    const op2 = overlappingPaths[i2];
-
-                    const linePart1 = this.linePart(path1, op1.route1.to.point, op1.route1.to.part, op2.route1.from.point, op2.route1.from.part);
-                    const linePart2 = this.linePart(path2, op1.route2.to.point, op1.route2.to.part, op2.route2.from.point, op2.route2.from.part);
-
-                    if (linePart1.length === 0 || linePart2.length === 0) {
-                        continue;
-                    }
-
-                    const d1 = length(lineString(linePart1), distanceOptions);
-                    const d2 = length(lineString(linePart2), distanceOptions);
-
-                    if (d1 < 50 && d2 < 50) {
-                        newOverlappingPaths.push({
-                            route1: {
-                                from: op1.route1.from,
-                                to: op2.route1.to,
-                            },
-                            route2: {
-                                from: op1.route2.from,
-                                to: op2.route2.to,
-                            }
-                        })
-                        continue opLoop;
-                    }
-                }
-
-                newOverlappingPaths.push(op1);
-            }
-
-            console.log(overlappingPaths, newOverlappingPaths);
-            overlappingPaths = newOverlappingPaths;
-        }
-
         const timeEnd = performance.now();
 
         return {
-            overlappingPaths: [],
+            overlappingPaths,
             calculationTime: timeEnd - timeBegin,
         };
     }
@@ -227,16 +188,12 @@ export class CompareRoutesService {
 
         for (let pathIndex1 = 0; pathIndex1 < path1.length - 1; ++pathIndex1) {
             const back1 = () => path1[pathIndex1];
-            const backPoint1 = () => point(back1());
             const front1 = () => path1[pathIndex1 + 1];
-            const frontPoint1 = () => point(front1());
             const line1 = () => lineString([back1(), front1()]);
 
             for (let pathIndex2 = 0; pathIndex2 < path2.length - 1; ++pathIndex2) {
                 const back2 = () => path2[pathIndex2];
-                const backPoint2 = () => point(back2());
                 const front2 = () => path2[pathIndex2 + 1];
-                const frontPoint2 = () => point(front2());
                 const line2 = () => lineString([back2(), front2()]);
 
                 let pointOnLine1 = nearestPointOnLine(line1(), back2());
@@ -267,7 +224,7 @@ export class CompareRoutesService {
 
                 let route1To: ComparePoint;
                 let route2To: ComparePoint;
-                while (pathIndex1 < path1.length - 1 && pathIndex2 < path1.length - 1) {
+                while (pathIndex1 < path1.length - 1 && pathIndex2 < path2.length - 1) {
                     pointOnLine1 = nearestPointOnLine(line1(), front2());
                     pointOnLine2 = nearestPointOnLine(line2(), front1());
 
@@ -319,19 +276,52 @@ export class CompareRoutesService {
         };
     }
 
+    public improve(overlappingPaths: OverlappingPath[], path1: Position[], path2: Position[]): OverlappingPath[] {
+
+        const newOverlappingPaths: OverlappingPath[] = [];
+        opLoop: for (let i1 = 0; i1 < overlappingPaths.length; ++i1) {
+            const op1 = overlappingPaths[i1];
+            for (let i2 = i1 + 1; i2 < overlappingPaths.length; ++i2) {
+                const op2 = overlappingPaths[i2];
+
+                const linePart1 = this.linePart(path1, op1.route1.to.point, op1.route1.to.part, op2.route1.from.point, op2.route1.from.part);
+                const linePart2 = this.linePart(path2, op1.route2.to.point, op1.route2.to.part, op2.route2.from.point, op2.route2.from.part);
+
+                if (linePart1.length === 0 || linePart2.length === 0) {
+                    continue;
+                }
+
+                const d1 = length(lineString(linePart1), distanceOptions);
+                const d2 = length(lineString(linePart2), distanceOptions);
+
+                if (d1 < 50 && d2 < 50) {
+                    newOverlappingPaths.push({
+                        route1: {
+                            from: op1.route1.from,
+                            to: op2.route1.to,
+                        },
+                        route2: {
+                            from: op1.route2.from,
+                            to: op2.route2.to,
+                        }
+                    })
+                    continue opLoop;
+                }
+            }
+
+            newOverlappingPaths.push(op1);
+        }
+
+        return newOverlappingPaths;
+    }
+
     public linePart(path, from: number, fromPart: number, to: number, toPart: number): Position[] {
         if (from === to && fromPart === toPart) {
             return [];
         }
 
         if (from > to || (from === to && fromPart > toPart)) {
-            let tmp = from;
-            from = to;
-            to = tmp;
-
-            tmp = fromPart;
-            fromPart = toPart;
-            toPart = tmp;
+            return [];
         }
 
         const pointIds = [];
