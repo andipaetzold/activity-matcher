@@ -31,7 +31,7 @@ export class LapDetectionComponent implements OnInit {
     private maxDistance$: BehaviorSubject<number> = new BehaviorSubject<number>(10);
     private minLength$: BehaviorSubject<number> = new BehaviorSubject<number>(200);
 
-    private potentialLaps$: BehaviorSubject<Lap[]> = new BehaviorSubject<Lap[]>([]);
+    public potentialLaps$: BehaviorSubject<Lap[]> = new BehaviorSubject<Lap[]>([]);
     private selectedPotentialLap$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
     private displayedPotentialLap$: BehaviorSubject<Position[]> = new BehaviorSubject<Position[]>([]);
 
@@ -111,10 +111,9 @@ export class LapDetectionComponent implements OnInit {
             this.maxDistance$,
         )
             .subscribe(([path, potentialLaps, displayedPotentialLap, maxDistance]) => {
-
                 const potentialLap = potentialLaps[displayedPotentialLap];
                 if (potentialLap) {
-                    const lapCounts = this.lapDetectionService.countLaps(path, potentialLap.from, potentialLap.to, maxDistance);
+                    const lapCounts = []; // this.lapDetectionService.countLaps(path, potentialLap.from, potentialLap.to, maxDistance);
                     if (lapCounts.length > 0) {
                         console.log(lapCounts);
                     }

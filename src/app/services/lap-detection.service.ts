@@ -46,7 +46,27 @@ export class LapDetectionService {
             }
         }
 
-        return laps;
+        return this.filterPotentialLaps(laps);
+    }
+
+    private filterPotentialLaps(laps: Lap[]): Lap[] {
+        const newLaps: Lap[] = [];
+
+        const sortedLaps = laps.sort((a, b) => a.to - b.to);
+
+        let i = 0;
+        while (true) {
+            const lap = sortedLaps[i++];
+            newLaps.push(lap);
+
+            while (sortedLaps[i].from < lap.to) {
+                ++i;
+
+                if (!sortedLaps[i]) {
+                    return newLaps;
+                }
+            }
+        }
     }
 
     public countLaps(path: Position[], lapFrom: number, lapTo: number, maxDistance: number) {
