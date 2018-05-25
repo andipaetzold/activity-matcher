@@ -28,7 +28,7 @@ export class LapDetectionComponent implements OnInit {
     private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
     private selectedSnapType$: BehaviorSubject<string> = new BehaviorSubject<string>('none');
     private routes$: Observable<MapRoute[]>;
-    private maxDistance$: BehaviorSubject<number> = new BehaviorSubject<number>(5);
+    private maxDistance$: BehaviorSubject<number> = new BehaviorSubject<number>(10);
     private minLength$: BehaviorSubject<number> = new BehaviorSubject<number>(200);
 
     private potentialLaps$: BehaviorSubject<Lap[]> = new BehaviorSubject<Lap[]>([]);
@@ -103,6 +103,24 @@ export class LapDetectionComponent implements OnInit {
                 { path },
                 { path: potentialLap, color: 'blue', width: 2 }
             ]);
+
+        combineLatest(
+            this.selectedPath$,
+            this.potentialLaps$,
+            this.selectedPotentialLap$,
+            this.maxDistance$,
+        )
+            .subscribe(([path, potentialLaps, displayedPotentialLap, maxDistance]) => {
+
+                const potentialLap = potentialLaps[displayedPotentialLap];
+                if (potentialLap) {
+                    const lapCounts = this.lapDetectionService.countLaps(path, potentialLap.from, potentialLap.to, maxDistance);
+                    if (lapCounts.length > 0) {
+                        console.log(lapCounts);
+                    }
+                }
+
+            });
     }
 
     public async ngOnInit(): Promise<void> {
