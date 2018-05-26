@@ -47,12 +47,19 @@ export class LapDetectionService {
         }
 
         return this.filterPotentialLaps(laps);
+        // return laps;
     }
 
     private filterPotentialLaps(laps: Lap[]): Lap[] {
         const newLaps: Lap[] = [];
 
-        const sortedLaps = laps.sort((a, b) => a.to - b.to);
+        const sortedLaps = laps.sort((a, b) => {
+            if (a.to === b.to) {
+                return b.from - a.from;
+            } else {
+                return a.to - b.to;
+            }
+        });
 
         let i = 0;
         while (true) {
@@ -69,26 +76,25 @@ export class LapDetectionService {
         }
     }
 
-    public countLaps(path: Position[], lapFrom: number, lapTo: number, maxDistance: number) {
-        const lapCounts: number[] = [];
-        const lap = path.slice(lapFrom, lapTo + 1);
+    public countLaps(path: Position[], lapFrom: number, lapTo: number, maxDistance: number): Lap[] {
+        const laps: Lap[] = [];
+        const lapPath = path.slice(lapFrom, lapTo + 1);
         for (let lapStartIndex = 0; lapStartIndex < path.length; ++lapStartIndex) {
-            let laps = 0;
             while (lapStartIndex < path.length) {
-                const points = this.compare(path.slice(lapStartIndex), lap, maxDistance);
+                const points = this.compare(path.slice(lapStartIndex - 1), lapPath, maxDistance);
                 if (!points) {
                     break;
                 }
-                lapStartIndex += points - 1;
-                ++laps;
-            }
+                laps.push({
+                    from: lapStartIndex,
+                    to: lapStartIndex + points,
+                });
 
-            if (laps > 1) {
-                lapCounts.push(laps);
+                lapStartIndex += points;
             }
         }
 
-        return lapCounts;
+        return laps;
     }
 
     private compare(path: Position[], lap: Position[], maxDistance: number): number {
@@ -97,6 +103,7 @@ export class LapDetectionService {
         }
 
         let pathIndex1 = 0;
+
         const back1 = () => path[pathIndex1];
         const front1 = () => path[pathIndex1 + 1];
         const line1 = () => lineString([back1(), front1()]);
@@ -132,6 +139,10 @@ export class LapDetectionService {
             } else {
                 ++pathIndex1;
             }
+        }
+
+        if (pathIndex1 >= path.length - 1) {
+            return 0;
         }
 
         return pathIndex1;

@@ -92,7 +92,7 @@ export class LapDetectionComponent implements OnInit {
                 .filter(lap => !!lap),
             this.selectedPath$
         )
-            .map(([potentialLap, path]) => path.slice(potentialLap.from - 1, potentialLap.to))
+            .map(([potentialLap, path]) => [...path.slice(potentialLap.from, potentialLap.to), path[potentialLap.from]])
             .subscribe(this.displayedPotentialLap$);
 
         this.routes$ = combineLatest(
@@ -107,18 +107,18 @@ export class LapDetectionComponent implements OnInit {
         combineLatest(
             this.selectedPath$,
             this.potentialLaps$,
-            this.selectedPotentialLap$,
             this.maxDistance$,
         )
-            .subscribe(([path, potentialLaps, displayedPotentialLap, maxDistance]) => {
-                const potentialLap = potentialLaps[displayedPotentialLap];
-                if (potentialLap) {
-                    const lapCounts = []; // this.lapDetectionService.countLaps(path, potentialLap.from, potentialLap.to, maxDistance);
-                    if (lapCounts.length > 0) {
-                        console.log(lapCounts);
+            .subscribe(([path, potentialLaps, maxDistance]) => {
+                let bestPotentialLaps = [];
+                for (const potentialLap of potentialLaps) {
+                    const lapCounts = this.lapDetectionService.countLaps(path, potentialLap.from, potentialLap.to, maxDistance);
+
+                    if (lapCounts.length > bestPotentialLaps.length) {
+                        bestPotentialLaps = lapCounts;
                     }
                 }
-
+                console.log(bestPotentialLaps);
             });
     }
 
