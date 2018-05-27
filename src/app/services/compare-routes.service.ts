@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { Injectable } from '@angular/core';
 import { Position } from 'geojson';
 import { point, lineString, Units } from '@turf/helpers';
 import distance from '@turf/distance';

@@ -1,7 +1,7 @@
-import { Component, Input, ViewChild } from "@angular/core";
-import { MapRoute } from "app/domain/MapRoute";
-import { MapMapboxComponent } from "../map-mapbox/map-mapbox.component";
-import { MapGoogleComponent } from "../map-google/map-google.component";
+import { Component, Input, ViewChild } from '@angular/core';
+import { MapRoute } from 'app/domain/MapRoute';
+import { MapMapboxComponent } from '../map-mapbox/map-mapbox.component';
+import { MapGoogleComponent } from '../map-google/map-google.component';
 
 @Component({
     selector: 'app-map',

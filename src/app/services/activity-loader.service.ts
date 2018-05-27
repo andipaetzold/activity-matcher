@@ -1,17 +1,17 @@
-import { Injectable } from "@angular/core";
-import { StravaAuthService } from "./strava-auth.service";
-import { HttpClient } from "@angular/common/http";
+import { Injectable } from '@angular/core';
+import { StravaAuthService } from './strava-auth.service';
+import { HttpClient } from '@angular/common/http';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { DetailedAthlete } from "../domain/DetailedAthlete";
-import { DetailedActivity } from "../domain/DetailedActivity";
-import { LatLng } from "../domain/LatLng";
-import { StravaAPIService } from "./strava-api.service";
-import { BehaviorSubject } from "rxjs/BehaviorSubject";
-import { Observable } from "rxjs/Observable";
-import { StreamResolution, STREAM_RESOLUTIONS } from "../domain/StreamResolutions";
-import { LatLngStream } from "../domain/LatLngStream";
+import { DetailedAthlete } from '../domain/DetailedAthlete';
+import { DetailedActivity } from '../domain/DetailedActivity';
+import { LatLng } from '../domain/LatLng';
+import { StravaAPIService } from './strava-api.service';
+import { StreamResolution, STREAM_RESOLUTIONS } from '../domain/StreamResolutions';
+import { LatLngStream } from '../domain/LatLngStream';
 import { Position } from 'geojson';
-import { SnapToRoadService } from "./snap-to-road.service";
+import { SnapToRoadService } from './snap-to-road.service';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 @Injectable()
 export class ActivityLoaderService {
@@ -50,7 +50,9 @@ export class ActivityLoaderService {
             this.addLogs(`Loading activity details... [${activityCounter++} of ${activities.length}]`);
 
             const activityDoc = this.firestore.collection('athletes').doc(String(activity.athlete.id)).collection('activities').doc(String(activity.id));
-            const snap = await activityDoc.snapshotChanges().take(1).toPromise();
+            const snap = await activityDoc.snapshotChanges()
+                .pipe(take(1))
+                .toPromise();
             if (snap.payload.exists) {
                 this.addLogs('Skipped');
             } else {

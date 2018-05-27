@@ -1,16 +1,16 @@
-import { Injectable } from "@angular/core";
-import { DetailedAthlete } from "../domain/DetailedAthlete";
-import { DetailedActivity } from "../domain/DetailedActivity";
-import { HttpClient } from "@angular/common/http";
-import { StravaAuthService } from "./strava-auth.service";
-import { HeartrateStream } from "../domain/HeartrateStream";
-import { DistanceStream } from "app/domain/DistanceStream";
-import { LatLngStream } from "../domain/LatLngStream";
-import { AltitudeStream } from "app/domain/AltitudeStream";
-import { TimeStream } from "app/domain/TimeStream";
-import { SmoothVelocityStream } from "../domain/SmoothVelocityStream";
-import { AllStreams } from "../domain/AllStreams";
-import { StreamResolution } from "../domain/StreamResolutions";
+import { Injectable } from '@angular/core';
+import { DetailedAthlete } from '../domain/DetailedAthlete';
+import { DetailedActivity } from '../domain/DetailedActivity';
+import { HttpClient } from '@angular/common/http';
+import { StravaAuthService } from './strava-auth.service';
+import { HeartrateStream } from '../domain/HeartrateStream';
+import { DistanceStream } from 'app/domain/DistanceStream';
+import { LatLngStream } from '../domain/LatLngStream';
+import { AltitudeStream } from 'app/domain/AltitudeStream';
+import { TimeStream } from 'app/domain/TimeStream';
+import { SmoothVelocityStream } from '../domain/SmoothVelocityStream';
+import { AllStreams } from '../domain/AllStreams';
+import { StreamResolution } from '../domain/StreamResolutions';
 
 @Injectable()
 export class StravaAPIService {

@@ -5,6 +5,7 @@ node_js:
 script:
   - npm install -g firebase-tools@latest
   - npm install
+  - rm node_modules/@turf/invariant/index.mjs
   - npm run build:prod
 
 after_success:

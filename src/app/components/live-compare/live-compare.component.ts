@@ -1,7 +1,5 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { DetailedActivity } from 'app/domain/DetailedActivity';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { Observable } from 'rxjs/Observable';
 import { MapRoute } from 'app/domain/MapRoute';
 import { CompareResult, CompareRoutesService } from 'app/services/compare-routes.service';
 import { StravaAuthService } from 'app/services/strava-auth.service';
@@ -10,11 +8,11 @@ import { AngularFirestore } from 'angularfire2/firestore';
 import { StravaAPIService } from 'app/services/strava-api.service';
 import { SnapToRoadService } from 'app/services/snap-to-road.service';
 import { Router, ActivatedRoute } from '@angular/router';
-import { combineLatest } from 'rxjs/observable/combineLatest';
 import { Position } from 'geojson';
 import { lineString } from '@turf/helpers';
 import length from '@turf/length';
-import { Subject } from 'rxjs/Subject';
+import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
+import { map, filter, mergeMap, defaultIfEmpty, first } from 'rxjs/operators';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -31,7 +29,7 @@ export class LiveCompareComponent {
     private selectedPath1$: BehaviorSubject<Position[]> = new BehaviorSubject([]);
     private selectedPath2$: BehaviorSubject<Position[]> = new BehaviorSubject([]);
     private path2PointId$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
-    private liveSelectedPath2$: Observable<Position[]> = combineLatest(this.selectedPath2$, this.path2PointId$).map(([path, id]) => path.slice(0, id));
+    private liveSelectedPath2$: Observable<Position[]> = combineLatest(this.selectedPath2$, this.path2PointId$).pipe(map(([path, id]) => path.slice(0, id)));
 
     private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
     private routes$: Observable<MapRoute[]>;
@@ -51,45 +49,52 @@ export class LiveCompareComponent {
         private readonly compareRoutesService: CompareRoutesService,
     ) {
         combineLatest(
-            this.selectedActivity1$.filter(a => !!a),
+            this.selectedActivity1$.pipe(filter(a => !!a)),
             this.selectedQuality$,
         )
-            .mergeMap(([activity, quality]) => this.firestore
-                .collection('athletes').doc(String(activity.athlete.id))
-                .collection('activities').doc(String(activity.id))
-                .collection('latlng').doc(quality).valueChanges())
-            .filter(o => !!o)
-            .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat]))
-            .defaultIfEmpty([])
+            .pipe(
+                mergeMap(([activity, quality]) => this.firestore
+                    .collection('athletes').doc(String(activity.athlete.id))
+                    .collection('activities').doc(String(activity.id))
+                    .collection('latlng').doc(quality).valueChanges()
+                ),
+                filter(o => !!o),
+                map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
+                defaultIfEmpty([])
+            )
             .subscribe(this.selectedPath1$);
 
         combineLatest(
-            this.selectedActivity2$.filter(a => !!a),
+            this.selectedActivity2$.pipe(filter(a => !!a)),
             this.selectedQuality$,
         )
-            .mergeMap(([activity, quality]) => this.firestore
-                .collection('athletes').doc(String(activity.athlete.id))
-                .collection('activities').doc(String(activity.id))
-                .collection('latlng').doc(quality).valueChanges())
-            .filter(o => !!o)
-            .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat]))
-            .defaultIfEmpty([])
+            .pipe(
+                mergeMap(([activity, quality]) => this.firestore
+                    .collection('athletes').doc(String(activity.athlete.id))
+                    .collection('activities').doc(String(activity.id))
+                    .collection('latlng').doc(quality).valueChanges()),
+                filter(o => !!o),
+                map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
+                defaultIfEmpty([]),
+        )
             .subscribe(this.selectedPath2$);
 
         this.routes$ = combineLatest(
             this.selectedPath1$,
             this.liveSelectedPath2$,
             // this.overlappingPaths$.defaultIfEmpty([])
-        ).map(([selectedPath1, selectedPath2]) => {
-            const routes: MapRoute[] = [
-                { path: selectedPath1, color: 'red' },
-                { path: selectedPath2, color: 'green', width: 2 },
-                // ...overlappingPaths.map(pair => ({ path: pair[0], color: 'blue', width: 2 })),
-                // ...overlappingPaths.map(pair => ({ path: pair[1], color: 'purple', width: 2 })),
-            ];
+        )
+            .pipe(map(([selectedPath1, selectedPath2]) => {
+                const routes: MapRoute[] = [
+                    { path: selectedPath1, color: 'red' },
+                    { path: selectedPath2, color: 'green', width: 2 },
+                    // ...overlappingPaths.map(pair => ({ path: pair[0], color: 'blue', width: 2 })),
+                    // ...overlappingPaths.map(pair => ({ path: pair[1], color: 'purple', width: 2 })),
+                ];
 
-            return routes;
-        });
+                return routes;
+            })
+            );
     }
 
     public async ngOnInit(): Promise<void> {
@@ -100,8 +105,11 @@ export class LiveCompareComponent {
             .collection('athletes').doc(String(athlete.id))
             .collection<DetailedActivity>('activities', ref => ref.orderBy('start_date'))
             .valueChanges()
-            .map(a => a.reverse())
-            .take(1).toPromise();
+            .pipe(
+                map(a => a.reverse()),
+                first()
+            )
+            .toPromise();
 
         if (this.route.snapshot.queryParamMap.has('activity1')) {
             this.selectedActivity1 = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity1')))

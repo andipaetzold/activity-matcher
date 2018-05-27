@@ -1,18 +1,16 @@
-import { Component, OnInit } from "@angular/core";
-import { Observable } from "rxjs/Observable";
-import { BehaviorSubject } from "rxjs/BehaviorSubject";
-import { DetailedActivity } from "app/domain/DetailedActivity";
-import { combineLatest } from "rxjs/observable/combineLatest";
-import { StravaAuthService } from "app/services/strava-auth.service";
-import { HttpClient } from "@angular/common/http";
-import { AngularFirestore } from "angularfire2/firestore";
-import { StravaAPIService } from "app/services/strava-api.service";
-import { SnapToRoadService } from "app/services/snap-to-road.service";
+import { Component, OnInit } from '@angular/core';
+import { DetailedActivity } from 'app/domain/DetailedActivity';
+import { StravaAuthService } from 'app/services/strava-auth.service';
+import { HttpClient } from '@angular/common/http';
+import { AngularFirestore } from 'angularfire2/firestore';
+import { StravaAPIService } from 'app/services/strava-api.service';
+import { SnapToRoadService } from 'app/services/snap-to-road.service';
 import { Position } from 'geojson';
-import { of } from "rxjs/observable/of";
-import { MapRoute } from "../../domain/MapRoute";
-import { Router, ActivatedRoute } from "@angular/router";
-import { LapDetectionService, Lap } from "../../services/lap-detection.service";
+import { MapRoute } from '../../domain/MapRoute';
+import { Router, ActivatedRoute } from '@angular/router';
+import { LapDetectionService, Lap } from '../../services/lap-detection.service';
+import { BehaviorSubject, Observable, combineLatest, of } from 'rxjs';
+import { filter, mergeMap, map, defaultIfEmpty, first } from 'rxjs/operators';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -49,38 +47,46 @@ export class LapDetectionComponent implements OnInit {
         this.selectedPath$ =
             combineLatest(
                 combineLatest(
-                    this.selectedActivity$.filter(a => !!a),
+                    this.selectedActivity$.pipe(filter(a => !!a)),
                     this.selectedQuality$,
                 )
-                    .mergeMap(([activity, quality]) => this.firestore
-                        .collection('athletes').doc(String(activity.athlete.id))
-                        .collection('activities').doc(String(activity.id))
-                        .collection('latlng').doc(quality).valueChanges())
-                    .filter(o => !!o)
-                    .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
+                    .pipe(
+                        mergeMap(([activity, quality]) => this.firestore
+                            .collection('athletes').doc(String(activity.athlete.id))
+                            .collection('activities').doc(String(activity.id))
+                            .collection('latlng').doc(quality).valueChanges()),
+                        filter(o => !!o),
+                        map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat]))
+                    ),
                 this.selectedSnapType$,
-            ).mergeMap(([route, snapType]) => {
-                switch (snapType) {
-                    case 'google-maps':
-                        return this.snapToRoadService.snapGoogleMaps(route);
-                    case 'google-maps-interpolate':
-                        return this.snapToRoadService.snapGoogleMaps(route, true);
-                    case 'mapbox':
-                        return this.snapToRoadService.snapMapbox(route, true);
-                    case 'mapbox-full':
-                        return this.snapToRoadService.snapMapbox(route, false);
-                    case 'none':
-                    default:
-                        return of(route);
-                }
-            })
-                .defaultIfEmpty([]);
+            )
+                .pipe(
+                    mergeMap(([route, snapType]) => {
+                        switch (snapType) {
+                            case 'google-maps':
+                                return this.snapToRoadService.snapGoogleMaps(route);
+                            case 'google-maps-interpolate':
+                                return this.snapToRoadService.snapGoogleMaps(route, true);
+                            case 'mapbox':
+                                return this.snapToRoadService.snapMapbox(route, true);
+                            case 'mapbox-full':
+                                return this.snapToRoadService.snapMapbox(route, false);
+                            case 'none':
+                            default:
+                                return of(route);
+                        }
+                    }),
+                    defaultIfEmpty([])
+                );
 
         combineLatest(
             this.selectedPath$,
             this.maxDistance$,
             this.minLength$
-        ).map(([path, maxDistance, minLength]) => this.lapDetectionService.findLaps(path, maxDistance, minLength))
+        )
+            .pipe(
+                map(([path, maxDistance, minLength]) => this.lapDetectionService.findLaps(path, maxDistance, minLength))
+            )
             .subscribe(this.potentialLaps$);
 
         combineLatest(
@@ -88,21 +94,27 @@ export class LapDetectionComponent implements OnInit {
                 this.potentialLaps$,
                 this.selectedPotentialLap$
             )
-                .map(([potentialLaps, selectedPotentialLap]) => potentialLaps[selectedPotentialLap])
-                .filter(lap => !!lap),
+                .pipe(
+                    map(([potentialLaps, selectedPotentialLap]) => potentialLaps[selectedPotentialLap]),
+                    filter(lap => !!lap)
+                ),
             this.selectedPath$
         )
-            .map(([potentialLap, path]) => [...path.slice(potentialLap.from, potentialLap.to), path[potentialLap.from]])
+            .pipe(
+                map(([potentialLap, path]) => [...path.slice(potentialLap.from, potentialLap.to), path[potentialLap.from]])
+            )
             .subscribe(this.displayedPotentialLap$);
 
         this.routes$ = combineLatest(
             this.selectedPath$,
             this.displayedPotentialLap$
         )
-            .map(([path, potentialLap]) => [
-                { path },
-                { path: potentialLap, color: 'blue', width: 2 }
-            ]);
+            .pipe(
+                map(([path, potentialLap]) => [
+                    { path },
+                    { path: potentialLap, color: 'blue', width: 2 }
+                ])
+            );
 
         combineLatest(
             this.selectedPath$,
@@ -130,8 +142,10 @@ export class LapDetectionComponent implements OnInit {
             .collection('athletes').doc(String(athlete.id))
             .collection<DetailedActivity>('activities', ref => ref.orderBy('start_date'))
             .valueChanges()
-            .map(a => a.reverse())
-            .take(1).toPromise();
+            .pipe(
+                map(a => a.reverse()),
+                first()
+            ).toPromise();
 
         if (this.route.snapshot.queryParamMap.has('activity')) {
             this.selectedActivity = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity')))

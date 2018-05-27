@@ -1,18 +1,16 @@
-import { Component, OnInit, ChangeDetectionStrategy } from "@angular/core";
-import { StravaAuthService } from "../../services/strava-auth.service";
-import { HttpClient } from "@angular/common/http";
-import { AngularFirestore } from "angularfire2/firestore";
-import { BehaviorSubject } from "rxjs/BehaviorSubject";
-import { Observable } from "rxjs/Observable";
-import 'rxjs/add/operator/map';
-import { DetailedActivity } from "../../domain/DetailedActivity";
-import { DetailedAthlete } from "../../domain/DetailedAthlete";
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { StravaAuthService } from '../../services/strava-auth.service';
+import { HttpClient } from '@angular/common/http';
+import { AngularFirestore } from 'angularfire2/firestore';
+import { DetailedActivity } from '../../domain/DetailedActivity';
+import { DetailedAthlete } from '../../domain/DetailedAthlete';
 import { Position } from 'geojson';
-import { StravaAPIService } from "../../services/strava-api.service";
-import { combineLatest } from 'rxjs/observable/combineLatest';
-import { MapRoute } from "app/domain/MapRoute";
-import { ActivatedRoute, Router } from "@angular/router";
-import { SimplifyService, SimplifyResult } from "../../services/simplify.service";
+import { StravaAPIService } from '../../services/strava-api.service';
+import { MapRoute } from 'app/domain/MapRoute';
+import { ActivatedRoute, Router } from '@angular/router';
+import { SimplifyService, SimplifyResult } from '../../services/simplify.service';
+import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
+import { filter, mergeMap, map, defaultIfEmpty, distinctUntilChanged, first } from 'rxjs/operators';
 
 @Component({
     selector: 'app-simplify',
@@ -38,25 +36,29 @@ export class SimplifyComponent implements OnInit {
         private readonly simplifyService: SimplifyService,
     ) {
         this._selectedPath = this._selectedActivity
-            .filter(activity => !!activity)
-            .mergeMap(activity => this.firestore
-                .collection('athletes').doc(String(activity.athlete.id))
-                .collection('activities').doc(String(activity.id))
-                .collection('latlng').doc('high').valueChanges())
-            .filter(o => !!o)
-            .map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat]))
-            .defaultIfEmpty([]);
+            .pipe(
+                filter(activity => !!activity),
+                mergeMap(activity => this.firestore
+                    .collection('athletes').doc(String(activity.athlete.id))
+                    .collection('activities').doc(String(activity.id))
+                    .collection('latlng').doc('high').valueChanges()),
+                filter(o => !!o),
+                map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
+                defaultIfEmpty([])
+            );
 
         this._simplifyResult =
             combineLatest(this._selectedPath, this._epsilon)
-                .distinctUntilChanged()
-                .map(([route, epsilon]) => this.simplifyService.simplify(route, epsilon));
+                .pipe(
+                    distinctUntilChanged(),
+                    map(([route, epsilon]) => this.simplifyService.simplify(route, epsilon))
+                );
 
-        this._simplifiedPath = this._simplifyResult.map(r => r.simplifiedPath);
+        this._simplifiedPath = this._simplifyResult.pipe(map(r => r.simplifiedPath));
 
         this._routes = combineLatest(
-            this._selectedPath.map(path => ({ path })),
-            this._simplifiedPath.map(path => ({ path, color: 'blue' })),
+            this._selectedPath.pipe(map(path => ({ path }))),
+            this._simplifiedPath.pipe(map(path => ({ path, color: 'blue' }))),
         );
     }
 
@@ -68,8 +70,10 @@ export class SimplifyComponent implements OnInit {
             .collection('athletes').doc(String(athlete.id))
             .collection<DetailedActivity>('activities', ref => ref.orderBy('start_date'))
             .valueChanges()
-            .map(a => a.reverse())
-            .take(1).toPromise();
+            .pipe(
+                map(a => a.reverse()),
+                first(),
+        ).toPromise();
 
         if (this.route.snapshot.queryParamMap.has('activity')) {
             this.selectedActivity = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity')))

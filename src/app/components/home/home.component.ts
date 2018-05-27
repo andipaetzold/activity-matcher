@@ -1,12 +1,11 @@
-import { Component, OnInit } from "@angular/core";
-import { Observable } from "rxjs/Observable";
-import { of } from 'rxjs/observable/of';
-import { ActivatedRoute, Router } from "@angular/router";
-import 'rxjs/add/operator/map';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
-import { environment } from "environments/environment";
-import { StravaAuthService } from "../../services/strava-auth.service";
-import { ActivityLoaderService } from "../../services/activity-loader.service";
+import { environment } from 'environments/environment';
+import { StravaAuthService } from '../../services/strava-auth.service';
+import { ActivityLoaderService } from '../../services/activity-loader.service';
+import { map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 @Component({
     selector: 'app-home',
@@ -28,7 +27,7 @@ export class HomeComponent implements OnInit {
     }
 
     public isLoggedIn(): Observable<boolean> {
-        return this.stravaAuthService.currentCode.map(code => !!code);
+        return this.stravaAuthService.currentCode.pipe(map(code => !!code));
     }
 
     public get loginUrl(): string {
@@ -44,6 +43,6 @@ export class HomeComponent implements OnInit {
     }
 
     public get logs(): Observable<string[]> {
-        return this.activityLoaderService.logs.map(logs => logs.slice(-20));
+        return this.activityLoaderService.logs.pipe(map(logs => logs.slice(-20)));
     }
 }

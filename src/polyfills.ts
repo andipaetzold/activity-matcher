@@ -15,12 +15,3 @@ import 'core-js/es6/set';
 import 'core-js/es6/reflect';
 import 'core-js/es7/reflect';
 import 'zone.js/dist/zone';
-
-import 'rxjs/add/observable/combineLatest';
-
-import 'rxjs/add/operator/defaultIfEmpty';
-import 'rxjs/add/operator/take';
-import 'rxjs/add/operator/distinctUntilChanged';
-import 'rxjs/add/operator/withLatestFrom';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/operator/toPromise';

@@ -1,12 +1,12 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from "@angular/core";
-import { AngularFirestore } from "angularfire2/firestore";
-import { StravaAuthService } from "../../services/strava-auth.service";
-import { Observable } from "rxjs/Observable";
-import { HttpClient } from "@angular/common/http";
-import { PageEvent } from "@angular/material/paginator";
-import { DetailedActivity } from "../../domain/DetailedActivity";
-import { DistanceStream } from "app/domain/DistanceStream";
-import { ActivityType } from "../../domain/ActivityType";
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { AngularFirestore } from 'angularfire2/firestore';
+import { StravaAuthService } from '../../services/strava-auth.service';
+import { HttpClient } from '@angular/common/http';
+import { PageEvent } from '@angular/material/paginator';
+import { DetailedActivity } from '../../domain/DetailedActivity';
+import { DistanceStream } from 'app/domain/DistanceStream';
+import { ActivityType } from '../../domain/ActivityType';
+import { map, first } from 'rxjs/operators';
 @Component({
     selector: 'app-activities',
     templateUrl: './activities.component.html'
@@ -39,8 +39,10 @@ export class ActivitiesComponent implements OnInit {
                 .collection('athletes').doc(String(athlete.id))
                 .collection<DetailedActivity>('activities', ref => ref.orderBy('start_date'))
                 .valueChanges()
-                .map(a => a.reverse())
-                .take(1).toPromise();
+                .pipe(
+                    map(a => a.reverse()),
+                    first()
+                ).toPromise();
 
             this.pageChanged({
                 pageIndex: 0,
@@ -55,8 +57,10 @@ export class ActivitiesComponent implements OnInit {
                     .collection('activities').doc(String(activity.id))
                     .collection('distance').doc<DistanceStream>('high')
                     .valueChanges()
-                    .take(1)
-                    .map(stream => stream.data.length)
+                    .pipe(
+                        first(),
+                        map(stream => stream.data.length)
+                    )
                     .toPromise();
                 this.cdr.detectChanges();
             }

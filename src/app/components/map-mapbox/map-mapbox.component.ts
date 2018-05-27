@@ -1,8 +1,8 @@
-import { Component, ViewChild, ElementRef, OnInit, Input } from "@angular/core";
+import { Component, ViewChild, ElementRef, OnInit, Input } from '@angular/core';
 import { Map, LngLatBounds, LngLat, NavigationControl } from 'mapbox-gl';
 import { lineString, Feature, LineString, MultiPolygon, Point, Polygon } from '@turf/helpers';
 import { Position } from 'geojson';
-import { MapRoute } from "app/domain/MapRoute";
+import { MapRoute } from 'app/domain/MapRoute';
 
 @Component({
     selector: 'app-map-mapbox',

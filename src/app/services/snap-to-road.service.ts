@@ -1,8 +1,8 @@
-import { Injectable } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
-import { environment } from "environments/environment";
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from 'environments/environment';
 import { Position } from 'geojson';
-import { JSONP_ERR_WRONG_RESPONSE_TYPE } from "@angular/common/http/src/jsonp";
+import { JSONP_ERR_WRONG_RESPONSE_TYPE } from '@angular/common/http/src/jsonp';
 
 @Injectable()
 export class SnapToRoadService {
