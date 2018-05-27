@@ -7,6 +7,7 @@ import { SnapToRoadComponent } from './components/snap-to-road/snap-to-road.comp
 import { LapDetectionComponent } from './components/lap-detection/lap-detection.component';
 import { CompareRoutesComponent } from 'app/components/compare-routes/compare-routes.component';
 import { SimplifyComponent } from './components/simplify/simplify.component';
+import { LiveCompareComponent } from './components/live-compare/live-compare.component';
 
 
 const routes: Routes = [
@@ -33,6 +34,10 @@ const routes: Routes = [
     {
         path: 'lap-detection',
         component: LapDetectionComponent,
+    },
+    {
+        path: 'live-compare',
+        component: LiveCompareComponent,
     },
     {
         path: '**',
