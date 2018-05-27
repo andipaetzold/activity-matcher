@@ -42,7 +42,8 @@ export class ActivitiesComponent implements OnInit {
                 .pipe(
                     map(a => a.reverse()),
                     first()
-                ).toPromise();
+                )
+                .toPromise();
 
             this.pageChanged({
                 pageIndex: 0,

@@ -13,7 +13,7 @@ import length from '@turf/length';
 import { point, lineString } from '@turf/helpers';
 import distance from '@turf/distance';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
-import { filter, map, mergeMap, defaultIfEmpty, first } from 'rxjs/operators';
+import { filter, map, mergeMap, defaultIfEmpty, first, withLatestFrom } from 'rxjs/operators';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -54,44 +54,37 @@ export class CompareRoutesComponent implements OnInit {
     ) {
         this._selectedPath1 =
             combineLatest(
-                combineLatest(
-                    this._selectedActivity1.pipe(filter(a => !!a)),
-                    this._selectedQuality,
-                )
-                    .pipe(
-                        mergeMap(([activity, quality]) => this.firestore
-                            .collection('athletes').doc(String(activity.athlete.id))
-                            .collection('activities').doc(String(activity.id))
-                            .collection('latlng').doc(quality).valueChanges()),
-                        filter(o => !!o),
-                        map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat]))
-                    ),
-                this._selectedSnapType,
+                this._selectedActivity1.pipe(filter(a => !!a)),
+                this._selectedQuality,
             )
                 .pipe(
+                    mergeMap(([activity, quality]) => this.firestore
+                        .collection('athletes').doc(String(activity.athlete.id))
+                        .collection('activities').doc(String(activity.id))
+                        .collection('latlng').doc(quality).valueChanges()),
+                    filter(o => !!o),
+                    map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
+                    withLatestFrom(this._selectedSnapType),
                     mergeMap(([route, snapType]) => this.convertRoute(route, snapType)),
                     defaultIfEmpty([])
                 );
 
         this._selectedPath2 =
             combineLatest(
-                combineLatest(
-                    this._selectedActivity2.pipe(filter(a => !!a)),
-                    this._selectedQuality,
-                )
-                    .pipe(
-                        mergeMap(([activity, quality]) => this.firestore
-                            .collection('athletes').doc(String(activity.athlete.id))
-                            .collection('activities').doc(String(activity.id))
-                            .collection('latlng').doc(quality).valueChanges()),
-                        filter(o => !!o),
-                        map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat]))
-                    ),
-                this._selectedSnapType,
-            ).pipe(
-                mergeMap(([route, snapType]) => this.convertRoute(route, snapType)),
-                defaultIfEmpty([])
-            );
+                this._selectedActivity2.pipe(filter(a => !!a)),
+                this._selectedQuality,
+            )
+                .pipe(
+                    mergeMap(([activity, quality]) => this.firestore
+                        .collection('athletes').doc(String(activity.athlete.id))
+                        .collection('activities').doc(String(activity.id))
+                        .collection('latlng').doc(quality).valueChanges()),
+                    filter(o => !!o),
+                    map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
+                    withLatestFrom(this._selectedSnapType),
+                    mergeMap(([route, snapType]) => this.convertRoute(route, snapType)),
+                    defaultIfEmpty([])
+                );
 
         this._compareResult = combineLatest(
             this._selectedPath1,
@@ -192,7 +185,8 @@ export class CompareRoutesComponent implements OnInit {
             .pipe(
                 map(a => a.reverse()),
                 first()
-            ).toPromise();
+            )
+            .toPromise();
 
         if (this.route.snapshot.queryParamMap.has('activity1')) {
             this.selectedActivity1 = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity1')))

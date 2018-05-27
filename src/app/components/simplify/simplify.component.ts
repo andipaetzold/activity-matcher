@@ -72,8 +72,9 @@ export class SimplifyComponent implements OnInit {
             .valueChanges()
             .pipe(
                 map(a => a.reverse()),
-                first(),
-        ).toPromise();
+                first()
+            )
+            .toPromise();
 
         if (this.route.snapshot.queryParamMap.has('activity')) {
             this.selectedActivity = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity')))

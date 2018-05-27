@@ -13,7 +13,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import length from '@turf/length';
 import { lineString } from '@turf/helpers';
 import { of, BehaviorSubject, Observable, combineLatest } from 'rxjs';
-import { map, distinctUntilChanged, mergeMap, defaultIfEmpty, filter, first } from 'rxjs/operators';
+import { distinctUntilChanged, mergeMap, defaultIfEmpty, filter, first, map } from 'rxjs/operators';
 
 @Component({
     selector: 'app-snap-to-road',
@@ -111,7 +111,8 @@ export class SnapToRoadComponent implements OnInit {
             .pipe(
                 map(a => a.reverse()),
                 first()
-            ).toPromise();
+            )
+            .toPromise();
 
         if (this.route.snapshot.queryParamMap.has('activity')) {
             this.selectedActivity = this.activities.find(a => a.id === Number.parseInt(this.route.snapshot.queryParamMap.get('activity')))
