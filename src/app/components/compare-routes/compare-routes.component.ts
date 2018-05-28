@@ -13,7 +13,7 @@ import length from '@turf/length';
 import { point, lineString } from '@turf/helpers';
 import distance from '@turf/distance';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
-import { filter, map, mergeMap, defaultIfEmpty, first, withLatestFrom } from 'rxjs/operators';
+import { filter, map, mergeMap, defaultIfEmpty, first, withLatestFrom, tap } from 'rxjs/operators';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -30,7 +30,7 @@ export class CompareRoutesComponent implements OnInit {
     private _selectedPath2: Observable<Position[]>;
     private _selectedQuality: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
-    private _selectedCompareType: BehaviorSubject<string> = new BehaviorSubject<string>('points');
+    private _selectedCompareType: BehaviorSubject<string> = new BehaviorSubject<string>('points-lines-2');
     private _routes: Observable<MapRoute[]>;
 
     private _compareResult: Observable<CompareResult>;

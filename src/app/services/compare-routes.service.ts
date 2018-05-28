@@ -232,11 +232,11 @@ export class CompareRoutesService {
                             point: pathIndex1,
                             part: distance(back1(), pointOnLine1, distanceOptions) / length(line1(), distanceOptions)
                         });
-                        overlappingPath.route2.push({ point: pathIndex2, part: 0 });
+                        overlappingPath.route2.push({ point: pathIndex2, part: 1 });
 
                         ++pathIndex2;
                     } else {
-                        overlappingPath.route1.push({ point: pathIndex1, part: 0 });
+                        overlappingPath.route1.push({ point: pathIndex1, part: 1 });
                         overlappingPath.route2.push({
                             point: pathIndex2,
                             part: distance(back2(), pointOnLine2, distanceOptions) / length(line2(), distanceOptions)
@@ -303,7 +303,7 @@ export class CompareRoutesService {
                  */
     }
 
-    public linePart(path, from: number, fromPart: number, to: number, toPart: number): Position[] {
+    public linePart(path: Position[], from: number, fromPart: number, to: number, toPart: number): Position[] {
         if (from + 1 >= path.length || to + 1 >= path.length) {
             return [];
         }

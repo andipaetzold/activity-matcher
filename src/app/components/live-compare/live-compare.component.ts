@@ -11,9 +11,9 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { Position } from 'geojson';
 import { lineString } from '@turf/helpers';
 import length from '@turf/length';
-import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
-import { map, filter, mergeMap, defaultIfEmpty, first } from 'rxjs/operators';
-import { LiveCompareService } from 'app/services/live-compare.service';
+import { BehaviorSubject, Observable, combineLatest, Subject } from 'rxjs';
+import { map, filter, mergeMap, defaultIfEmpty, first, tap } from 'rxjs/operators';
+import { LiveCompareService, OverlappingPath } from 'app/services/live-compare.service';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -35,9 +35,10 @@ export class LiveCompareComponent {
     private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
     private routes$: Observable<MapRoute[]>;
 
+    private overlappingPathsResult$: BehaviorSubject<OverlappingPath[]> = new BehaviorSubject<OverlappingPath[]>([]);
     private overlappingPaths$: Observable<[Position[], Position[]][]>;
 
-    private maxDistance$: BehaviorSubject<number> = new BehaviorSubject<number>(5);
+    private maxDistance$: BehaviorSubject<number> = new BehaviorSubject<number>(10);
 
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
@@ -53,55 +54,66 @@ export class LiveCompareComponent {
         combineLatest(
             this.selectedActivity1$.pipe(filter(a => !!a)),
             this.selectedQuality$,
-        )
-            .pipe(
-                mergeMap(([activity, quality]) => this.firestore
-                    .collection('athletes').doc(String(activity.athlete.id))
-                    .collection('activities').doc(String(activity.id))
-                    .collection('latlng').doc(quality).valueChanges()
-                ),
-                filter(o => !!o),
-                map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
-                defaultIfEmpty([])
-            )
-            .subscribe(this.selectedPath1$);
+        ).pipe(
+            mergeMap(([activity, quality]) => this.firestore
+                .collection('athletes').doc(String(activity.athlete.id))
+                .collection('activities').doc(String(activity.id))
+                .collection('latlng').doc(quality).valueChanges()
+            ),
+            filter(o => !!o),
+            map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
+            defaultIfEmpty([])
+        ).subscribe(this.selectedPath1$);
 
         combineLatest(
             this.selectedActivity2$.pipe(filter(a => !!a)),
             this.selectedQuality$,
-        )
-            .pipe(
-                mergeMap(([activity, quality]) => this.firestore
-                    .collection('athletes').doc(String(activity.athlete.id))
-                    .collection('activities').doc(String(activity.id))
-                    .collection('latlng').doc(quality).valueChanges()),
-                filter(o => !!o),
-                map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
-                defaultIfEmpty([]),
-        )
-            .subscribe(this.selectedPath2$);
+        ).pipe(
+            mergeMap(([activity, quality]) => this.firestore
+                .collection('athletes').doc(String(activity.athlete.id))
+                .collection('activities').doc(String(activity.id))
+                .collection('latlng').doc(quality).valueChanges()),
+            filter(o => !!o),
+            map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
+            defaultIfEmpty([]),
+        ).subscribe(this.selectedPath2$);
 
         combineLatest(
             this.selectedPath1$,
             this.selectedPath2$,
-        ).subscribe(([path1, path2]) => this.liveCompareService.reset(path1));
+            this.maxDistance$,
+        ).subscribe(([path1, path2, maxDistance]) => this.liveCompareService.reset(path1, maxDistance));
+
+        this.overlappingPaths$ = combineLatest(
+            this.overlappingPathsResult$,
+            this.selectedPath1$,
+            this.selectedPath2$,
+        ).pipe(
+            map(
+                ([result, path1, path2]) => result.map((r): [Position[], Position[]] => ([
+                    this.compareRoutesService.linePart(path1, r.route1[0].point, r.route1[0].part, r.route1[r.route1.length - 1].point, r.route1[r.route1.length - 1].part),
+                    this.compareRoutesService.linePart(path2, r.route2[0].point, r.route2[0].part, r.route2[r.route2.length - 1].point, r.route2[r.route2.length - 1].part),
+                ]))
+            ),
+            map(paths => paths.filter(pair => pair[0].length >= 2 && pair[1].length >= 2))
+        );
 
         this.routes$ = combineLatest(
             this.selectedPath1$,
             this.liveSelectedPath2$,
-            // this.overlappingPaths$.defaultIfEmpty([])
-        )
-            .pipe(map(([selectedPath1, selectedPath2]) => {
+            this.overlappingPaths$.pipe(defaultIfEmpty([]))
+        ).pipe(
+            map(([selectedPath1, selectedPath2, overlappingPaths]) => {
                 const routes: MapRoute[] = [
                     { path: selectedPath1, color: 'red' },
                     { path: selectedPath2, color: 'green', width: 2 },
-                    // ...overlappingPaths.map(pair => ({ path: pair[0], color: 'blue', width: 2 })),
-                    // ...overlappingPaths.map(pair => ({ path: pair[1], color: 'purple', width: 2 })),
+                    ...overlappingPaths.map(pair => ({ path: pair[0], color: 'blue', width: 2 })),
+                    ...overlappingPaths.map(pair => ({ path: pair[1], color: 'purple', width: 2 })),
                 ];
 
                 return routes;
             })
-            );
+        );
     }
 
     public async ngOnInit(): Promise<void> {
@@ -176,8 +188,16 @@ export class LiveCompareComponent {
     }
 
     public nextPath2Point(): void {
-        this.liveCompareService.addPoint(this.selectedPath2$.getValue()[this.path2PointId$.getValue()]);
+        const position = this.selectedPath2$.getValue()[this.path2PointId$.getValue()];
+        if (position) {
+            const result = this.liveCompareService.addPoint(position);
 
-        this.path2PointId$.next(this.path2PointId$.getValue() + 1);
+            if (result) {
+                console.log(result);
+                this.overlappingPathsResult$.next([...this.overlappingPathsResult$.getValue(), result])
+            }
+
+            this.path2PointId$.next(this.path2PointId$.getValue() + 1);
+        }
     }
 }
