@@ -40,7 +40,7 @@ export class CompareRoutesComponent implements OnInit {
     private _overlappingDistance: Observable<number>;
     private _overlappingPercentage: Observable<number>;
 
-    private _maxDistance: BehaviorSubject<number> = new BehaviorSubject<number>(5);
+    private _maxDistance: BehaviorSubject<number> = new BehaviorSubject<number>(10);
 
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
@@ -107,7 +107,9 @@ export class CompareRoutesComponent implements OnInit {
         );
 
         this._overlappingPaths = combineLatest(
-            this._compareResult.pipe(map(r => r.overlappingPaths)),
+            this._compareResult.pipe(
+                map(r => r.overlappingPaths),
+            ),
             this._selectedPath1,
             this._selectedPath2,
         ).pipe(

@@ -56,7 +56,7 @@ export class CompareRoutesService {
         const timeEnd = performance.now();
 
         return {
-            overlappingPaths,
+            overlappingPaths: this.improve(overlappingPaths, path1, path2, maxDistance),
             calculationTime: timeEnd - timeBegin,
         };
     }
@@ -105,7 +105,7 @@ export class CompareRoutesService {
         const timeEnd = performance.now();
 
         return {
-            overlappingPaths,
+            overlappingPaths: this.improve(overlappingPaths, path1, path2, maxDistance),
             calculationTime: timeEnd - timeBegin,
         };
     }
@@ -171,7 +171,7 @@ export class CompareRoutesService {
         const timeEnd = performance.now();
 
         return {
-            overlappingPaths,
+            overlappingPaths: this.improve(overlappingPaths, path1, path2, maxDistance),
             calculationTime: timeEnd - timeBegin,
         };
     }
@@ -254,55 +254,60 @@ export class CompareRoutesService {
 
         const timeEnd = performance.now();
         return {
-            overlappingPaths,
+            overlappingPaths: this.improve(overlappingPaths, path1, path2, maxDistance),
             calculationTime: timeEnd - timeBegin,
         };
     }
 
-    public improve(overlappingPaths: OverlappingPath[], path1: Position[], path2: Position[]): OverlappingPath[] {
-        const newOverlappingPaths: OverlappingPath[] = [];
-        opLoop: for (let i1 = 0; i1 < overlappingPaths.length; ++i1) {
-            const op1 = overlappingPaths[i1];
-            for (let i2 = i1 + 1; i2 < overlappingPaths.length; ++i2) {
-                const op2 = overlappingPaths[i2];
-
-                const route1To = op1.route1[op1.route1.length - 1];
-                const route1From = op2.route1[0];
-                const route2To = op1.route2[op1.route2.length - 1];
-                const route2From = op2.route2[0];
-
-                const linePart1 = this.linePart(path1, route1To.point, route1To.part, route1From.point, route1From.part);
-                const linePart2 = this.linePart(path2, route2To.point, route2To.part, route2From.point, route2From.part);
-
-                if (linePart1.length === 0 || linePart2.length === 0) {
-                    continue;
+    public improve(overlappingPaths: OverlappingPath[], path1: Position[], path2: Position[], maxDistance: number): OverlappingPath[] {
+        return overlappingPaths;
+        /**
+                const newOverlappingPaths: OverlappingPath[] = [];
+                opLoop: while (overlappingPaths.length > 0) {
+                    const op1 = overlappingPaths[0];
+                    for (let i2 = 1; i2 < overlappingPaths.length; ++i2) {
+                        const op2 = overlappingPaths[i2];
+        
+                        const route1To = op1.route1[op1.route1.length - 1];
+                        const route1From = op2.route1[0];
+        
+                        const route2To = op1.route2[op1.route2.length - 1];
+                        const route2From = op2.route2[0];
+        
+                        const linePart1 = this.linePart(path1, route1To.point, route1To.part, route1From.point, route1From.part);
+                        const linePart2 = this.linePart(path2, route2To.point, route2To.part, route2From.point, route2From.part);
+        
+                        if (linePart1.length === 0 || linePart2.length === 0) {
+                            continue;
+                        }
+        
+                        const d1 = length(lineString(linePart1), distanceOptions);
+                        const d2 = length(lineString(linePart2), distanceOptions);
+        
+                        if (d1 < maxDistance && d2 < maxDistance) {
+                            newOverlappingPaths.push({
+                                route1: [...op1.route1, ...op2.route1],
+                                route2: [...op1.route2, ...op2.route2],
+                            });
+                            overlappingPaths.splice(i2, 1);
+                            overlappingPaths.shift();
+                            continue opLoop;
+                        }
+                    }
+        
+                    newOverlappingPaths.push(op1);
+                    overlappingPaths.shift();
                 }
-
-                const d1 = length(lineString(linePart1), distanceOptions);
-                const d2 = length(lineString(linePart2), distanceOptions);
-
-                if (d1 < 50 && d2 < 50) {
-                    newOverlappingPaths.push({
-                        route1: [
-                            ...op1.route1,
-                            ...op2.route1,
-                        ],
-                        route2: [
-                            ...op1.route2,
-                            ...op2.route2,
-                        ]
-                    })
-                    continue opLoop;
-                }
-            }
-
-            newOverlappingPaths.push(op1);
-        }
-
-        return newOverlappingPaths;
+        
+                return newOverlappingPaths;
+                 */
     }
 
     public linePart(path, from: number, fromPart: number, to: number, toPart: number): Position[] {
+        if (from + 1 >= path.length || to + 1 >= path.length) {
+            return [];
+        }
+
         if (from === to && fromPart === toPart) {
             return [];
         }
@@ -330,6 +335,10 @@ export class CompareRoutesService {
 
         const sliceFrom = partFirstLine;
         const sliceTo = lineLength - partLastLine;
+
+        if (sliceFrom >= sliceTo) {
+            return [];
+        }
 
         return lineSliceAlong(line, sliceFrom, sliceTo).geometry.coordinates;
     }
