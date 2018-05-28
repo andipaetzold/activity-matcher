@@ -12,14 +12,8 @@ export interface ComparePoint {
 }
 
 export interface OverlappingPath {
-    route1: {
-        from: ComparePoint;
-        to: ComparePoint;
-    };
-    route2: {
-        from: ComparePoint;
-        to: ComparePoint;
-    };
+    route1: ComparePoint[],
+    route2: ComparePoint[],
 };
 
 export interface CompareResult {
@@ -46,14 +40,14 @@ export class CompareRoutesService {
                 const d2 = distance(pathCoords1[indexPath1 + 1], pathCoords2[indexPath2 + 1], distanceOptions);
                 if (d1 < maxDistance && d2 < maxDistance) {
                     overlappingPaths.push({
-                        route1: {
-                            from: { point: indexPath1, part: 0 },
-                            to: { point: indexPath1, part: 1 },
-                        },
-                        route2: {
-                            from: { point: indexPath2, part: 0 },
-                            to: { point: indexPath2, part: 1 },
-                        }
+                        route1: [
+                            { point: indexPath1, part: 0 },
+                            { point: indexPath1, part: 1 },
+                        ],
+                        route2: [
+                            { point: indexPath2, part: 0 },
+                            { point: indexPath2, part: 1 },
+                        ],
                     });
                     break;
                 }
@@ -89,20 +83,20 @@ export class CompareRoutesService {
 
                 if (distanceBetweenStarts < maxDistance && distanceBetweenStops < maxDistance) {
                     overlappingPaths.push({
-                        route1: {
-                            from: { point: indexPath1, part: 0 },
-                            to: { point: indexPath1 + 1, part: 0 },
-                        },
-                        route2: {
-                            from: {
+                        route1: [
+                            { point: indexPath1, part: 0 },
+                            { point: indexPath1 + 1, part: 0 },
+                        ],
+                        route2: [
+                            {
                                 point: indexPath2,
                                 part: distance(path2[indexPath2], startPath2) / length(line)
                             },
-                            to: {
+                            {
                                 point: indexPath2,
                                 part: distance(path2[indexPath2], stopPath2) / length(line)
                             },
-                        },
+                        ],
                     });
                     break;
                 }
@@ -148,26 +142,26 @@ export class CompareRoutesService {
                     const route2StopId = indexPath2 + (sameLine ? 0 : 1);
 
                     overlappingPaths.push({
-                        route1: {
-                            from: {
+                        route1: [
+                            {
                                 point: indexPath1,
                                 part: 0,
                             },
-                            to: {
+                            {
                                 point: indexPath1 + 1,
                                 part: 0
                             },
-                        },
-                        route2: {
-                            from: {
+                        ],
+                        route2: [
+                            {
                                 point: indexPath2,
                                 part: distance(path2[indexPath2], startPath2) / length(line1),
                             },
-                            to: {
+                            {
                                 point: route2StopId,
                                 part: distance(path2[route2StopId], stopPath2) / length(sameLine ? line1 : line2)
                             },
-                        },
+                        ],
                     });
                     break;
                 }
@@ -206,24 +200,22 @@ export class CompareRoutesService {
                     continue;
                 }
 
-                let route1From: ComparePoint;
-                let route2From: ComparePoint;
+                const overlappingPath: OverlappingPath = { route1: [], route2: [], };
+
                 if (distanceToLine1 < distanceToLine2) {
-                    route1From = {
+                    overlappingPath.route1.push({
                         point: pathIndex1,
                         part: distance(back1(), pointOnLine1, distanceOptions) / length(line1(), distanceOptions)
-                    };
-                    route2From = { point: pathIndex2, part: 0 };
+                    });
+                    overlappingPath.route2.push({ point: pathIndex2, part: 0 });
                 } else {
-                    route1From = { point: pathIndex1, part: 0 };
-                    route2From = {
+                    overlappingPath.route1.push({ point: pathIndex1, part: 0 });
+                    overlappingPath.route2.push({
                         point: pathIndex2,
                         part: distance(back2(), pointOnLine2, distanceOptions) / length(line2(), distanceOptions)
-                    };
+                    });
                 }
 
-                let route1To: ComparePoint;
-                let route2To: ComparePoint;
                 while (pathIndex1 < path1.length - 1 && pathIndex2 < path2.length - 1) {
                     pointOnLine1 = nearestPointOnLine(line1(), front2());
                     pointOnLine2 = nearestPointOnLine(line2(), front1());
@@ -236,35 +228,26 @@ export class CompareRoutesService {
                     }
 
                     if (distanceToLine1 < distanceToLine2) {
-                        route1To = {
+                        overlappingPath.route1.push({
                             point: pathIndex1,
                             part: distance(back1(), pointOnLine1, distanceOptions) / length(line1(), distanceOptions)
-                        };
-                        route2To = { point: pathIndex2, part: 0 };
+                        });
+                        overlappingPath.route2.push({ point: pathIndex2, part: 0 });
 
                         ++pathIndex2;
                     } else {
-                        route1To = { point: pathIndex1, part: 0 };
-                        route2To = {
+                        overlappingPath.route1.push({ point: pathIndex1, part: 0 });
+                        overlappingPath.route2.push({
                             point: pathIndex2,
                             part: distance(back2(), pointOnLine2, distanceOptions) / length(line2(), distanceOptions)
-                        };
+                        });
 
                         ++pathIndex1;
                     }
                 }
 
-                if (route1To && route2To) {
-                    overlappingPaths.push({
-                        route1: {
-                            from: route1From,
-                            to: route1To,
-                        },
-                        route2: {
-                            from: route2From,
-                            to: route2To,
-                        }
-                    });
+                if (overlappingPath.route1.length >= 2 && overlappingPath.route2.length >= 2) {
+                    overlappingPaths.push(overlappingPath);
                 }
             }
         }
@@ -277,15 +260,19 @@ export class CompareRoutesService {
     }
 
     public improve(overlappingPaths: OverlappingPath[], path1: Position[], path2: Position[]): OverlappingPath[] {
-
         const newOverlappingPaths: OverlappingPath[] = [];
         opLoop: for (let i1 = 0; i1 < overlappingPaths.length; ++i1) {
             const op1 = overlappingPaths[i1];
             for (let i2 = i1 + 1; i2 < overlappingPaths.length; ++i2) {
                 const op2 = overlappingPaths[i2];
 
-                const linePart1 = this.linePart(path1, op1.route1.to.point, op1.route1.to.part, op2.route1.from.point, op2.route1.from.part);
-                const linePart2 = this.linePart(path2, op1.route2.to.point, op1.route2.to.part, op2.route2.from.point, op2.route2.from.part);
+                const route1To = op1.route1[op1.route1.length - 1];
+                const route1From = op2.route1[0];
+                const route2To = op1.route2[op1.route2.length - 1];
+                const route2From = op2.route2[0];
+
+                const linePart1 = this.linePart(path1, route1To.point, route1To.part, route1From.point, route1From.part);
+                const linePart2 = this.linePart(path2, route2To.point, route2To.part, route2From.point, route2From.part);
 
                 if (linePart1.length === 0 || linePart2.length === 0) {
                     continue;
@@ -296,14 +283,14 @@ export class CompareRoutesService {
 
                 if (d1 < 50 && d2 < 50) {
                     newOverlappingPaths.push({
-                        route1: {
-                            from: op1.route1.from,
-                            to: op2.route1.to,
-                        },
-                        route2: {
-                            from: op1.route2.from,
-                            to: op2.route2.to,
-                        }
+                        route1: [
+                            ...op1.route1,
+                            ...op2.route1,
+                        ],
+                        route2: [
+                            ...op1.route2,
+                            ...op2.route2,
+                        ]
                     })
                     continue opLoop;
                 }

@@ -113,8 +113,8 @@ export class CompareRoutesComponent implements OnInit {
         ).pipe(
             map(
                 ([result, path1, path2]) => result.map((r): [Position[], Position[]] => ([
-                    this.compareRoutesService.linePart(path1, r.route1.from.point, r.route1.from.part, r.route1.to.point, r.route1.to.part),
-                    this.compareRoutesService.linePart(path2, r.route2.from.point, r.route2.from.part, r.route2.to.point, r.route2.to.part),
+                    this.compareRoutesService.linePart(path1, r.route1[0].point, r.route1[0].part, r.route1[r.route1.length - 1].point, r.route1[r.route1.length - 1].part),
+                    this.compareRoutesService.linePart(path2, r.route2[0].point, r.route2[0].part, r.route2[r.route2.length - 1].point, r.route2[r.route2.length - 1].part),
                 ]))
             ),
             map(paths => paths.filter(pair => pair[0].length >= 2 && pair[1].length >= 2))
