@@ -38,6 +38,7 @@ import { SimplifyComponent } from './components/simplify/simplify.component';
 import { SimplifyService } from './services/simplify.service';
 import { LapDetectionService } from 'app/services/lap-detection.service';
 import { LiveCompareComponent } from 'app/components/live-compare/live-compare.component';
+import { LiveCompareService } from 'app/services/live-compare.service';
 
 @NgModule({
     declarations: [
@@ -62,6 +63,7 @@ import { LiveCompareComponent } from 'app/components/live-compare/live-compare.c
         CompareRoutesService,
         SimplifyService,
         LapDetectionService,
+        LiveCompareService,
     ],
     imports: [
         AppRoutingModule,

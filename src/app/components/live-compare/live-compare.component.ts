@@ -13,6 +13,7 @@ import { lineString } from '@turf/helpers';
 import length from '@turf/length';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { map, filter, mergeMap, defaultIfEmpty, first } from 'rxjs/operators';
+import { LiveCompareService } from 'app/services/live-compare.service';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -47,6 +48,7 @@ export class LiveCompareComponent {
         private readonly router: Router,
         private readonly route: ActivatedRoute,
         private readonly compareRoutesService: CompareRoutesService,
+        private readonly liveCompareService: LiveCompareService,
     ) {
         combineLatest(
             this.selectedActivity1$.pipe(filter(a => !!a)),
@@ -78,6 +80,11 @@ export class LiveCompareComponent {
                 defaultIfEmpty([]),
         )
             .subscribe(this.selectedPath2$);
+
+        combineLatest(
+            this.selectedPath1$,
+            this.selectedPath2$,
+        ).subscribe(([path1, path2]) => this.liveCompareService.reset(path1));
 
         this.routes$ = combineLatest(
             this.selectedPath1$,
@@ -169,6 +176,8 @@ export class LiveCompareComponent {
     }
 
     public nextPath2Point(): void {
+        this.liveCompareService.addPoint(this.selectedPath2$.getValue()[this.path2PointId$.getValue()]);
+
         this.path2PointId$.next(this.path2PointId$.getValue() + 1);
     }
 }
