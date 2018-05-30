@@ -46,8 +46,18 @@ export class LiveLapDetectionComponent implements OnInit {
         private readonly snapToRoadService: SnapToRoadService,
         private readonly router: Router,
         private readonly route: ActivatedRoute,
-        private readonly liveLavDetectionService: LiveLapDetectionService,
+        private readonly liveLapDetectionService: LiveLapDetectionService,
     ) {
+
+        combineLatest(
+            this.maxDistance$,
+            this.minLength$,
+            this.selectedPath$
+        ).subscribe(([maxDistance, minLength]) => {
+            this.liveLapDetectionService.reset(maxDistance, minLength);
+            this.pathPointId$.next(0);
+        });
+
         combineLatest(
             this.selectedActivity$.pipe(filter(a => !!a)),
             this.selectedQuality$,
@@ -132,7 +142,7 @@ export class LiveLapDetectionComponent implements OnInit {
     public nextPathPoint(): void {
         const position = this.selectedPath$.getValue()[this.pathPointId$.getValue()];
         if (position) {
-            this.liveLavDetectionService.addPoint(position);
+            this.liveLapDetectionService.addPoint(position);
 
             this.pathPointId$.next(this.pathPointId$.getValue() + 1);
         }

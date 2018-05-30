@@ -38,7 +38,7 @@ export class LapDetectionService {
                 }
 
                 if (distancePointToLine(path[lapStartIndex], stopLine, distanceOptions) <= maxDistance) {
-                    smallestStartIndex = lapStartIndex + 1;
+                    smallestStartIndex = lapStopIndex;
                     laps.push({
                         from: lapStartIndex,
                         to: lapStopIndex,
