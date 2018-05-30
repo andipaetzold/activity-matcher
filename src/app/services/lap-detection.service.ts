@@ -25,6 +25,34 @@ export class LapDetectionService {
 
     public findLaps(path: Position[], maxDistance: number, minLength: number): Lap[] {
         const laps: Lap[] = [];
+        let smallestStartIndex = 0;
+        stopIndexLoop: for (let lapStopIndex = 0; lapStopIndex < path.length - 1; ++lapStopIndex) {
+            const stopLine = lineString([path[lapStopIndex], path[lapStopIndex + 1]]);
+
+            let lapDistance = 0;
+            for (let lapStartIndex = lapStopIndex - 1; lapStartIndex >= smallestStartIndex; --lapStartIndex) {
+                lapDistance += distance(path[lapStartIndex], path[lapStartIndex + 1], distanceOptions);
+
+                if (lapDistance < minLength) {
+                    continue;
+                }
+
+                if (distancePointToLine(path[lapStartIndex], stopLine, distanceOptions) <= maxDistance) {
+                    smallestStartIndex = lapStartIndex + 1;
+                    laps.push({
+                        from: lapStartIndex,
+                        to: lapStopIndex,
+                    });
+                    continue stopIndexLoop;
+                }
+            }
+        }
+
+        return laps;
+    }
+
+    public findLapsSlow(path: Position[], maxDistance: number, minLength: number): Lap[] {
+        const laps: Lap[] = [];
         for (let startIndex = 0; startIndex < path.length; ++startIndex) {
             const startLine = lineString([path[startIndex], path[startIndex + 1]]);
 
@@ -45,6 +73,8 @@ export class LapDetectionService {
                 }
             }
         }
+
+        console.log(laps.length);
 
         return this.filterPotentialLaps(laps);
         // return laps;
