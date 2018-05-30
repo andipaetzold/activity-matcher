@@ -25,20 +25,22 @@ export interface ComparePoint {
 @Injectable()
 export class LiveCompareService {
     private maxDistance: number;
-    private path1: Position[] = [];
+    private path: Position[] = [];
 
     private pathIndex1: number = 0;
+    private pathIndex2: number = 0;
 
-    private path2: Position[] = [];
+    private prevLive: Position = null;
     private overlappingPath: OverlappingPath = null;
 
     public reset(path: Position[], maxDistance: number): void {
         this.maxDistance = maxDistance;
-        this.path1 = path;
-        this.path2 = [];
+        this.path = path;
         this.resetOverlappingPath();
+        this.prevLive = null;
 
         this.pathIndex1 = 0;
+        this.pathIndex2 = 0;
     }
 
     private resetOverlappingPath(): void {
@@ -48,26 +50,23 @@ export class LiveCompareService {
         };
     }
 
-    public addPoint(position: Position): OverlappingPath {
-        this.path2.push(position);
-
+    public addPoint(positionLive: Position): OverlappingPath {
         let result: OverlappingPath;
 
-        if (this.path2.length >= 2) {
-            const back1 = () => this.path1[this.pathIndex1];
-            const front1 = () => this.path1[this.pathIndex1 + 1];
+        if (this.pathIndex2 >= 1) {
+            const back1 = () => this.path[this.pathIndex1];
+            const front1 = () => this.path[this.pathIndex1 + 1];
             const line1 = () => lineString([back1(), front1()]);
 
-            const pathIndex2 = () => this.path2.length - 2;
-            const back2 = () => this.path2[pathIndex2()];
-            const front2 = () => this.path2[pathIndex2() + 1];
+            const back2 = () => this.prevLive;
+            const front2 = () => positionLive;
             const line2 = () => lineString([back2(), front2()]);
 
-            if (this.overlappingPath.route1.length <= 1) {
+            if (this.overlappingPath.route1.length === 0) {
                 this.pathIndex1 = 0;
             }
 
-            outerLoop: for (; this.pathIndex1 < this.path1.length - 1; ++this.pathIndex1) {
+            outerLoop: for (; this.pathIndex1 < this.path.length - 1; ++this.pathIndex1) {
                 let pointOnLine1: Position;
                 let pointOnLine2: Position;
                 let distanceToLine1: number;
@@ -89,17 +88,17 @@ export class LiveCompareService {
                             point: this.pathIndex1,
                             part: distance(back1(), pointOnLine1, distanceOptions) / length(line1(), distanceOptions)
                         });
-                        this.overlappingPath.route2.push({ point: pathIndex2(), part: 0 });
+                        this.overlappingPath.route2.push({ point: this.pathIndex2, part: 0 });
                     } else {
                         this.overlappingPath.route1.push({ point: this.pathIndex1, part: 0 });
                         this.overlappingPath.route2.push({
-                            point: pathIndex2(),
+                            point: this.pathIndex2,
                             part: distance(back2(), pointOnLine2, distanceOptions) / length(line2(), distanceOptions)
                         });
                     }
                 }
 
-                innerLoop: while (this.pathIndex1 < this.path1.length - 1) {
+                innerLoop: while (this.pathIndex1 < this.path.length - 1) {
                     pointOnLine1 = nearestPointOnLine(line1(), front2());
                     pointOnLine2 = nearestPointOnLine(line2(), front1());
 
@@ -120,13 +119,13 @@ export class LiveCompareService {
                             point: this.pathIndex1,
                             part: distance(back1(), pointOnLine1, distanceOptions) / length(line1(), distanceOptions)
                         });
-                        this.overlappingPath.route2.push({ point: pathIndex2(), part: 1 });
+                        this.overlappingPath.route2.push({ point: this.pathIndex2, part: 1 });
 
                         break outerLoop;
                     } else {
                         this.overlappingPath.route1.push({ point: this.pathIndex1, part: 1 });
                         this.overlappingPath.route2.push({
-                            point: pathIndex2(),
+                            point: this.pathIndex2,
                             part: distance(back2(), pointOnLine2, distanceOptions) / length(line2(), distanceOptions)
                         });
 
@@ -140,6 +139,9 @@ export class LiveCompareService {
                 }
             }
         }
+
+        ++this.pathIndex2;
+        this.prevLive = positionLive;
 
         return result;
     }
