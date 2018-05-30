@@ -39,6 +39,8 @@ import { SimplifyService } from './services/simplify.service';
 import { LapDetectionService } from 'app/services/lap-detection.service';
 import { LiveCompareComponent } from 'app/components/live-compare/live-compare.component';
 import { LiveCompareService } from 'app/services/live-compare.service';
+import { LiveLapDetectionComponent } from 'app/components/live-lap-detection/live-lap-detection.component';
+import { LiveLapDetectionService } from 'app/services/live-lap-detection.service';
 
 @NgModule({
     declarations: [
@@ -54,6 +56,7 @@ import { LiveCompareService } from 'app/services/live-compare.service';
         MapGoogleComponent,
         MapMapboxComponent,
         LiveCompareComponent,
+        LiveLapDetectionComponent,
     ],
     providers: [
         ActivityLoaderService,
@@ -64,6 +67,7 @@ import { LiveCompareService } from 'app/services/live-compare.service';
         SimplifyService,
         LapDetectionService,
         LiveCompareService,
+        LiveLapDetectionService,
     ],
     imports: [
         AppRoutingModule,

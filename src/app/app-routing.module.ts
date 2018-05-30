@@ -2,12 +2,13 @@ import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
 import { HomeComponent } from 'app/components/home/home.component';
-import { ActivitiesComponent } from './components/activities/activities.component';
-import { SnapToRoadComponent } from './components/snap-to-road/snap-to-road.component';
-import { LapDetectionComponent } from './components/lap-detection/lap-detection.component';
+import { ActivitiesComponent } from 'app/components/activities/activities.component';
+import { SnapToRoadComponent } from 'app/components/snap-to-road/snap-to-road.component';
+import { LapDetectionComponent } from 'app/components/lap-detection/lap-detection.component';
 import { CompareRoutesComponent } from 'app/components/compare-routes/compare-routes.component';
-import { SimplifyComponent } from './components/simplify/simplify.component';
-import { LiveCompareComponent } from './components/live-compare/live-compare.component';
+import { SimplifyComponent } from 'app/components/simplify/simplify.component';
+import { LiveCompareComponent } from 'app/components/live-compare/live-compare.component';
+import { LiveLapDetectionComponent } from 'app/components/live-lap-detection/live-lap-detection.component';
 
 
 const routes: Routes = [
@@ -38,6 +39,10 @@ const routes: Routes = [
     {
         path: 'live-compare',
         component: LiveCompareComponent,
+    },
+    {
+        path: 'live-lap-detection',
+        component: LiveLapDetectionComponent,
     },
     {
         path: '**',
