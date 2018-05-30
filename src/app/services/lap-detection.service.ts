@@ -66,6 +66,10 @@ export class LapDetectionService {
             const lap = sortedLaps[i++];
             newLaps.push(lap);
 
+            if (!sortedLaps[i]) {
+                return newLaps;
+            }
+
             while (sortedLaps[i].from < lap.to) {
                 ++i;
 
