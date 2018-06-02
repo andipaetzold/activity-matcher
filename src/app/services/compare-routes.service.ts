@@ -25,6 +25,14 @@ const distanceOptions = {
     units: <Units>'meters',
 };
 
+export interface ICompareRouteData {
+    name: string;
+    series: {
+        name: string | number;
+        value: number;
+    }[];
+}
+
 @Injectable()
 export class CompareRoutesService {
     public comparePoints(path1: Position[], path2: Position[], maxDistance: number): CompareResult {
@@ -341,5 +349,31 @@ export class CompareRoutesService {
         }
 
         return lineSliceAlong(line, sliceFrom, sliceTo).geometry.coordinates;
+    }
+
+    public createVelocityChartData(overlappingPath: OverlappingPath, velocity1: number[], velocity2: number[]): ICompareRouteData[] {
+        const data1: ICompareRouteData = {
+            name: 'Route 1',
+            series: overlappingPath.route1
+                .map(p => p.point)
+                .map(p => velocity1[p])
+                .map((v, i) => ({
+                    name: i,
+                    value: v,
+                })),
+        };
+
+        const data2: ICompareRouteData = {
+            name: 'Route 2',
+            series: overlappingPath.route2
+                .map(p => p.point)
+                .map(p => velocity2[p])
+                .map((v, i) => ({
+                    name: i,
+                    value: v,
+                })),
+        };
+
+        return [data1, data2];
     }
 }

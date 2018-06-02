@@ -52,9 +52,26 @@
             <input matInput type="number" placeholder="Max distance (in m)" [(ngModel)]="maxDistance" min="1" max="100" step="1">
         </mat-form-field>
 
+        <mat-form-field>
+            <input matInput type="number" placeholder="Chart Overlapping Id" [(ngModel)]="chartOverlappingId" min="0" step="1">
+        </mat-form-field>
+
         <br> Overlapping: {{ (overlappingPercentage | async) * 100 | round }} %
         <br> Calculation time: {{ (compareResult | async)?.calculationTime | round }} ms
     </mat-card-content>
 </mat-card>
 
-<app-map [routes]="routes | async"></app-map>
+<mat-card>
+    <mat-card-content>
+        <mat-tab-group>
+            <mat-tab label="Map">
+                <app-map [routes]="routes | async"></app-map>
+            </mat-tab>
+
+            <mat-tab label="Chart">
+                <ngx-charts-line-chart [view]="[800, 300]" [yAxis]="true" [results]="data | async" xAxisLabel="Position" yAxisLabel="Speed in (m/s)"
+                    [showXAxisLabel]="true" [showYAxisLabel]="true"></ngx-charts-line-chart>
+            </mat-tab>
+        </mat-tab-group>
+    </mat-card-content>
+</mat-card>

@@ -15,6 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { NgxChartsModule } from '@swimlane/ngx-charts';
 
 import { AppComponent } from 'app/app.component';
 import { AppRoutingModule } from 'app/app-routing.module';
@@ -79,6 +80,8 @@ import { LiveLapDetectionService } from 'app/services/live-lap-detection.service
         BrowserAnimationsModule,
         FormsModule,
         HttpClientModule,
+
+        NgxChartsModule,
 
         MatButtonModule,
         MatCardModule,

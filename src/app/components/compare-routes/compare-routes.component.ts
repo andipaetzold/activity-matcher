@@ -8,12 +8,14 @@ import { SnapToRoadService } from 'app/services/snap-to-road.service';
 import { Position } from 'geojson';
 import { MapRoute } from 'app/domain/MapRoute';
 import { Router, ActivatedRoute } from '@angular/router';
-import { CompareRoutesService, CompareResult } from '../../services/compare-routes.service';
+import { CompareRoutesService, CompareResult, ICompareRouteData } from '../../services/compare-routes.service';
 import length from '@turf/length';
 import { point, lineString } from '@turf/helpers';
 import distance from '@turf/distance';
-import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, of, Subject } from 'rxjs';
 import { filter, map, mergeMap, defaultIfEmpty, first, withLatestFrom, tap } from 'rxjs/operators';
+import { SmoothVelocityStream } from 'app/domain/SmoothVelocityStream';
+import { LatLngStream } from '../../domain/LatLngStream';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -28,12 +30,14 @@ export class CompareRoutesComponent implements OnInit {
     private _selectedActivity2: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
     private _selectedPath1: Observable<Position[]>;
     private _selectedPath2: Observable<Position[]>;
+    private _selectedVelocity1: Subject<number[]> = new BehaviorSubject<number[]>([]);
+    private _selectedVelocity2: Subject<number[]> = new BehaviorSubject<number[]>([]);
     private _selectedQuality: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
     private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
     private _selectedCompareType: BehaviorSubject<string> = new BehaviorSubject<string>('points-lines-2');
     private _routes: Observable<MapRoute[]>;
 
-    private _compareResult: Observable<CompareResult>;
+    private _compareResult: Subject<CompareResult> = new BehaviorSubject<CompareResult>(null);
     private _overlappingPaths: Observable<[Position[], Position[]][]>;
 
     private _totalDistance: Observable<number>;
@@ -41,6 +45,16 @@ export class CompareRoutesComponent implements OnInit {
     private _overlappingPercentage: Observable<number>;
 
     private _maxDistance: BehaviorSubject<number> = new BehaviorSubject<number>(10);
+    private _chartOverlappingId: BehaviorSubject<number> = new BehaviorSubject<number>(0);
+
+    public data: Observable<ICompareRouteData[]> = combineLatest(
+        this._compareResult.pipe(filter(cr => !!cr)),
+        this._selectedVelocity1,
+        this._selectedVelocity2,
+        this._chartOverlappingId,
+    ).pipe(
+        map(([result, velocity1, velocity2, chartOverlappingId]) => this.compareRoutesService.createVelocityChartData(result.overlappingPaths[chartOverlappingId], velocity1, velocity2))
+    );
 
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
@@ -56,37 +70,63 @@ export class CompareRoutesComponent implements OnInit {
             combineLatest(
                 this._selectedActivity1.pipe(filter(a => !!a)),
                 this._selectedQuality,
-            )
-                .pipe(
-                    mergeMap(([activity, quality]) => this.firestore
-                        .collection('athletes').doc(String(activity.athlete.id))
-                        .collection('activities').doc(String(activity.id))
-                        .collection('latlng').doc(quality).valueChanges()),
-                    filter(o => !!o),
-                    map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
-                    withLatestFrom(this._selectedSnapType),
-                    mergeMap(([route, snapType]) => this.convertRoute(route, snapType)),
-                    defaultIfEmpty([])
-                );
+            ).pipe(
+                mergeMap(([activity, quality]) => this.firestore
+                    .collection('athletes').doc(String(activity.athlete.id))
+                    .collection('activities').doc(String(activity.id))
+                    .collection('latlng').doc<LatLngStream>(quality)
+                    .valueChanges()),
+                filter(o => !!o),
+                map(o => o.data.map((coord: any): Position => [coord.lng, coord.lat])),
+                withLatestFrom(this._selectedSnapType),
+                mergeMap(([route, snapType]) => this.convertRoute(route, snapType)),
+                defaultIfEmpty([])
+            );
+
+        combineLatest(
+            this._selectedActivity1.pipe(filter(a => !!a)),
+            this._selectedQuality,
+        ).pipe(
+            mergeMap(([activity, quality]) => this.firestore
+                .collection('athletes').doc(String(activity.athlete.id))
+                .collection('activities').doc(String(activity.id))
+                .collection('velocity_smooth').doc<SmoothVelocityStream>(quality)
+                .valueChanges()),
+            filter(o => !!o),
+            map(o => o.data),
+        ).subscribe(this._selectedVelocity1);
 
         this._selectedPath2 =
             combineLatest(
                 this._selectedActivity2.pipe(filter(a => !!a)),
                 this._selectedQuality,
-            )
-                .pipe(
-                    mergeMap(([activity, quality]) => this.firestore
-                        .collection('athletes').doc(String(activity.athlete.id))
-                        .collection('activities').doc(String(activity.id))
-                        .collection('latlng').doc(quality).valueChanges()),
-                    filter(o => !!o),
-                    map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
-                    withLatestFrom(this._selectedSnapType),
-                    mergeMap(([route, snapType]) => this.convertRoute(route, snapType)),
-                    defaultIfEmpty([])
-                );
+            ).pipe(
+                mergeMap(([activity, quality]) => this.firestore
+                    .collection('athletes').doc(String(activity.athlete.id))
+                    .collection('activities').doc(String(activity.id))
+                    .collection('latlng').doc<LatLngStream>(quality)
+                    .valueChanges()),
+                filter(o => !!o),
+                map(o => o.data.map((coord: any): Position => [coord.lng, coord.lat])),
+                withLatestFrom(this._selectedSnapType),
+                mergeMap(([route, snapType]) => this.convertRoute(route, snapType)),
+                defaultIfEmpty([])
+            );
 
-        this._compareResult = combineLatest(
+        combineLatest(
+            this._selectedActivity2.pipe(filter(a => !!a)),
+            this._selectedQuality,
+        ).pipe(
+            mergeMap(([activity, quality]) => this.firestore
+                .collection('athletes').doc(String(activity.athlete.id))
+                .collection('activities').doc(String(activity.id))
+                .collection('velocity_smooth').doc<SmoothVelocityStream>(quality)
+                .valueChanges()),
+            filter(o => !!o),
+            map(o => o.data),
+        ).subscribe(this._selectedVelocity2);
+
+        combineLatest(
             this._selectedPath1,
             this._selectedPath2,
             this._maxDistance,
@@ -104,10 +144,11 @@ export class CompareRoutesComponent implements OnInit {
                         return this.compareRoutesService.comparePointsWithLines2(path1, path2, maxDistance);
                 }
             })
-        );
+        ).subscribe(this._compareResult);
 
         this._overlappingPaths = combineLatest(
             this._compareResult.pipe(
+                filter(cr => !!cr),
                 map(r => r.overlappingPaths),
             ),
             this._selectedPath1,
@@ -269,5 +310,13 @@ export class CompareRoutesComponent implements OnInit {
 
     public get overlappingPercentage(): Observable<number> {
         return this._overlappingPercentage;
+    }
+
+    public set chartOverlappingId(id: number) {
+        this._chartOverlappingId.next(id);
+    }
+
+    public get chartOverlappingId(): number {
+        return this._chartOverlappingId.getValue();
     }
 }
