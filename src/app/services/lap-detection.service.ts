@@ -131,6 +131,32 @@ export class LapDetectionService {
         return laps;
     }
 
+    public filterLaps(laps: Lap[][]) {
+        return laps.filter((curLaps, index) => {
+            for (const lapIndex in laps) {
+                const lap = laps[lapIndex];
+
+                if (+lapIndex === index) {
+                    continue;
+                }
+
+                for (const l1 of lap) {
+                    for (const l2 of curLaps) {
+                        if ((l1.from >= l2.from && l1.from <= l2.to) ||
+                            (l1.to >= l2.from && l1.to <= l2.to) ||
+                            (l1.from <= l2.from && l1.to >= l2.to)) {
+                            if (curLaps.length < lap.length ||
+                                (curLaps.length === lap.length && index > +lapIndex)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+            return true;
+        });
+    }
+
     private compare(path: Position[], lap: Position[], maxDistance: number): number {
         if (path.length < 2 || lap.length < 2) {
             return 0;

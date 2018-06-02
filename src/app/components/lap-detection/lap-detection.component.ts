@@ -106,17 +106,10 @@ export class LapDetectionComponent implements OnInit {
             this.selectedPath$,
             this.potentialLaps$,
             this.maxDistance$,
-        ).subscribe(([path, potentialLaps, maxDistance]) => {
-            let bestPotentialLaps = [];
-            for (const potentialLap of potentialLaps) {
-                const lapCounts = this.lapDetectionService.countLaps(path, potentialLap.from, potentialLap.to, maxDistance);
-
-                if (lapCounts.length > bestPotentialLaps.length) {
-                    bestPotentialLaps = lapCounts;
-                }
-            }
-            console.log(bestPotentialLaps);
-        });
+        ).pipe(
+            map(([path, potentialLaps, maxDistance]) => potentialLaps.map(potentialLap => this.lapDetectionService.countLaps(path, potentialLap.from, potentialLap.to, maxDistance))),
+            map(laps => this.lapDetectionService.filterLaps(laps))
+        ).subscribe(console.log);
     }
 
     public async ngOnInit(): Promise<void> {
