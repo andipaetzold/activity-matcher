@@ -29,8 +29,8 @@ export class LiveCompareComponent {
     private selectedActivity2$: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
     private selectedPath1$: BehaviorSubject<Position[]> = new BehaviorSubject([]);
     private selectedPath2$: BehaviorSubject<Position[]> = new BehaviorSubject([]);
-    private path2PointId$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
-    private liveSelectedPath2$: Observable<Position[]> = combineLatest(this.selectedPath2$, this.path2PointId$).pipe(map(([path, id]) => path.slice(0, id)));
+    private livePathPointId: BehaviorSubject<number> = new BehaviorSubject<number>(0);
+    private liveSelectedPath2$: Observable<Position[]> = combineLatest(this.selectedPath2$, this.livePathPointId).pipe(map(([path, id]) => path.slice(0, id)));
 
     private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
     private routes$: Observable<MapRoute[]>;
@@ -82,7 +82,7 @@ export class LiveCompareComponent {
             this.selectedPath1$,
             this.selectedPath2$,
             this.maxDistance$,
-        ).subscribe(([path1, path2, maxDistance]) => this.liveCompareService.reset(path1, maxDistance));
+        ).subscribe(([path1, path2, maxDistance]) => this.liveCompareService.reset(path2, maxDistance));
 
         this.overlappingPaths$ = combineLatest(
             this.overlappingPathsResult$,
@@ -187,8 +187,8 @@ export class LiveCompareComponent {
         this.maxDistance$.next(d);
     }
 
-    public nextPath2Point(): void {
-        const position = this.selectedPath2$.getValue()[this.path2PointId$.getValue()];
+    public nextLivePathPoint(): void {
+        const position = this.selectedPath1$.getValue()[this.livePathPointId.getValue()];
         if (position) {
             const result = this.liveCompareService.addPoint(position);
 
@@ -197,7 +197,7 @@ export class LiveCompareComponent {
                 this.overlappingPathsResult$.next([...this.overlappingPathsResult$.getValue(), result])
             }
 
-            this.path2PointId$.next(this.path2PointId$.getValue() + 1);
+            this.livePathPointId.next(this.livePathPointId.getValue() + 1);
         }
     }
 }

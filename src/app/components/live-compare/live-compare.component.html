@@ -4,7 +4,7 @@
     </mat-card-header>
     <mat-card-content>
         <mat-form-field>
-            <mat-select placeholder="Selected activity 1" [(value)]="selectedActivity1">
+            <mat-select placeholder="Selected activity 1 (Live)" [(value)]="selectedActivity1">
                 <mat-option *ngFor="let activity of activities" [value]="activity">
                     {{ activity.start_date | date:'shortDate'}} | {{ (activity.distance / 1000) | floor }} km | {{ (activity.elapsed_time / 60)
                     | floor }} min | {{ activity.type }}
@@ -33,7 +33,7 @@
             <input matInput type="number" placeholder="Max distance (in m)" [(ngModel)]="maxDistance" min="1" max="100" step="1">
         </mat-form-field>
 
-        <button mat-raised-button (click)="nextPath2Point()">Next path2 point</button>
+        <button mat-raised-button (click)="nextLivePathPoint()">Next path1 point</button>
     </mat-card-content>
 </mat-card>
 
