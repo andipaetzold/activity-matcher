@@ -30,6 +30,10 @@
         </mat-form-field>
 
         <mat-form-field>
+            <input matInput type="number" placeholder="Simplify Epsilon" [(ngModel)]="simplifyEpsilon" min="0" max="100" step="1">
+        </mat-form-field>
+
+        <mat-form-field>
             <mat-select placeholder="Select compare type" [(value)]="selectedCompareType">
                 <mat-option [value]="'points'">Points</mat-option>
                 <mat-option [value]="'points-line'">Points Line</mat-option>
@@ -55,9 +59,6 @@
         <mat-form-field>
             <input matInput type="number" placeholder="Chart Overlapping Id" [(ngModel)]="chartOverlappingId" min="0" step="1">
         </mat-form-field>
-
-        <br> Overlapping: {{ (overlappingPercentage | async) * 100 | round }} %
-        <br> Calculation time: {{ (compareResult | async)?.calculationTime | round }} ms
     </mat-card-content>
 </mat-card>
 

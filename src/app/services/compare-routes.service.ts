@@ -185,8 +185,6 @@ export class CompareRoutesService {
     }
 
     public comparePointsWithLines2(path1: Position[], path2: Position[], maxDistance: number): CompareResult {
-        console.time('comparePointsWithLines2');
-
         const overlappingPaths: OverlappingPath[] = [];
         const timeBegin = performance.now();
 
@@ -262,7 +260,6 @@ export class CompareRoutesService {
             }
         }
 
-        console.timeEnd('comparePointsWithLines2');
         const timeEnd = performance.now();
         return {
             overlappingPaths: this.improve(overlappingPaths, path1, path2, maxDistance),

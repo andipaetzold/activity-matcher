@@ -12,10 +12,11 @@ import { CompareRoutesService, CompareResult, ICompareRouteData } from '../../se
 import length from '@turf/length';
 import { point, lineString } from '@turf/helpers';
 import distance from '@turf/distance';
-import { BehaviorSubject, Observable, combineLatest, of, Subject } from 'rxjs';
-import { filter, map, mergeMap, defaultIfEmpty, first, withLatestFrom, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, combineLatest, of, Subject, interval } from 'rxjs';
+import { filter, map, mergeMap, defaultIfEmpty, first, withLatestFrom, tap, distinctUntilChanged, distinct, debounceTime } from 'rxjs/operators';
 import { SmoothVelocityStream } from 'app/domain/SmoothVelocityStream';
 import { LatLngStream } from '../../domain/LatLngStream';
+import { SimplifyService } from '../../services/simplify.service';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -26,32 +27,30 @@ type QualityType = 'low' | 'medium' | 'high';
 export class CompareRoutesComponent implements OnInit {
     public activities: DetailedActivity[] = [];
 
-    private _selectedActivity1: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
-    private _selectedActivity2: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
-    private _selectedPath1: Observable<Position[]>;
-    private _selectedPath2: Observable<Position[]>;
-    private _selectedVelocity1: Subject<number[]> = new BehaviorSubject<number[]>([]);
-    private _selectedVelocity2: Subject<number[]> = new BehaviorSubject<number[]>([]);
-    private _selectedQuality: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
-    private _selectedSnapType: BehaviorSubject<string> = new BehaviorSubject<string>('none');
-    private _selectedCompareType: BehaviorSubject<string> = new BehaviorSubject<string>('points-lines-2');
-    private _routes: Observable<MapRoute[]>;
+    private selectedActivity1$: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
+    private selectedActivity2$: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
+    private selectedPath1$: Subject<Position[]> = new BehaviorSubject(undefined);
+    private selectedPath2$: Subject<Position[]> = new BehaviorSubject(undefined);
+    private selectedVelocity1$: Subject<number[]> = new BehaviorSubject<number[]>(undefined);
+    private selectedVelocity2$: Subject<number[]> = new BehaviorSubject<number[]>(undefined);
+    private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
+    private selectedSnapType$: BehaviorSubject<string> = new BehaviorSubject<string>('none');
+    private selectedCompareType$: BehaviorSubject<string> = new BehaviorSubject<string>('points-lines-2');
+    private routes$: Observable<MapRoute[]>;
 
-    private _compareResult: Subject<CompareResult> = new BehaviorSubject<CompareResult>(null);
-    private _overlappingPaths: Observable<[Position[], Position[]][]>;
+    private compareResult$: Subject<CompareResult> = new BehaviorSubject<CompareResult>(null);
+    private overlappingPaths$: Observable<[Position[], Position[]][]>;
 
-    private _totalDistance: Observable<number>;
-    private _overlappingDistance: Observable<number>;
-    private _overlappingPercentage: Observable<number>;
+    private maxDistance$: BehaviorSubject<number> = new BehaviorSubject<number>(10);
+    private chartOverlappingId$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
 
-    private _maxDistance: BehaviorSubject<number> = new BehaviorSubject<number>(10);
-    private _chartOverlappingId: BehaviorSubject<number> = new BehaviorSubject<number>(0);
+    private simplifyEpsilon$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
 
     public data: Observable<ICompareRouteData[]> = combineLatest(
-        this._compareResult.pipe(filter(cr => !!cr)),
-        this._selectedVelocity1,
-        this._selectedVelocity2,
-        this._chartOverlappingId,
+        this.compareResult$.pipe(filter(cr => !!cr)),
+        this.selectedVelocity1$.pipe(filter(v => !!v)),
+        this.selectedVelocity2$.pipe(filter(v => !!v)),
+        this.chartOverlappingId$.pipe(filter(id => !!id)),
     ).pipe(
         map(([result, velocity1, velocity2, chartOverlappingId]) => this.compareRoutesService.createVelocityChartData(result.overlappingPaths[chartOverlappingId], velocity1, velocity2))
     );
@@ -65,72 +64,77 @@ export class CompareRoutesComponent implements OnInit {
         private readonly router: Router,
         private readonly route: ActivatedRoute,
         private readonly compareRoutesService: CompareRoutesService,
+        private readonly simplifyService: SimplifyService,
     ) {
-        this._selectedPath1 =
+        const selectedOriginalPath1$ =
             combineLatest(
-                this._selectedActivity1.pipe(filter(a => !!a)),
-                this._selectedQuality,
+                this.selectedActivity1$.pipe(filter(a => !!a)),
+                this.selectedQuality$,
             ).pipe(
-                mergeMap(([activity, quality]) => this.firestore
-                    .collection('athletes').doc(String(activity.athlete.id))
-                    .collection('activities').doc(String(activity.id))
-                    .collection('latlng').doc<LatLngStream>(quality)
-                    .valueChanges()),
-                filter(o => !!o),
-                map(o => o.data.map((coord: any): Position => [coord.lng, coord.lat])),
-                withLatestFrom(this._selectedSnapType),
-                mergeMap(([route, snapType]) => this.convertRoute(route, snapType)),
-                defaultIfEmpty([])
+                mergeMap(([activity, quality]) => this.getRoute(activity, quality))
             );
 
-        combineLatest(
-            this._selectedActivity1.pipe(filter(a => !!a)),
-            this._selectedQuality,
-        ).pipe(
-            mergeMap(([activity, quality]) => this.firestore
-                .collection('athletes').doc(String(activity.athlete.id))
-                .collection('activities').doc(String(activity.id))
-                .collection('velocity_smooth').doc<SmoothVelocityStream>(quality)
-                .valueChanges()),
-            filter(o => !!o),
-            map(o => o.data),
-        ).subscribe(this._selectedVelocity1);
-
-        this._selectedPath2 =
+        const selectedOriginalPath2$ =
             combineLatest(
-                this._selectedActivity2.pipe(filter(a => !!a)),
-                this._selectedQuality,
+                this.selectedActivity2$.pipe(filter(a => !!a)),
+                this.selectedQuality$,
             ).pipe(
-                mergeMap(([activity, quality]) => this.firestore
-                    .collection('athletes').doc(String(activity.athlete.id))
-                    .collection('activities').doc(String(activity.id))
-                    .collection('latlng').doc<LatLngStream>(quality)
-                    .valueChanges()),
-                filter(o => !!o),
-                map(o => o.data.map((coord: any): Position => [coord.lng, coord.lat])),
-                withLatestFrom(this._selectedSnapType),
-                mergeMap(([route, snapType]) => this.convertRoute(route, snapType)),
-                defaultIfEmpty([])
+                mergeMap(([activity, quality]) => this.getRoute(activity, quality))
             );
 
-        combineLatest(
-            this._selectedActivity2.pipe(filter(a => !!a)),
-            this._selectedQuality,
+        const selectedSnappedPath1 = combineLatest(
+            selectedOriginalPath1$,
+            this.selectedSnapType$
         ).pipe(
-            mergeMap(([activity, quality]) => this.firestore
-                .collection('athletes').doc(String(activity.athlete.id))
-                .collection('activities').doc(String(activity.id))
-                .collection('velocity_smooth').doc<SmoothVelocityStream>(quality)
-                .valueChanges()),
-            filter(o => !!o),
-            map(o => o.data),
-        ).subscribe(this._selectedVelocity2);
+            mergeMap(([route, snapType]) => this.snapRoute(route, snapType)),
+            defaultIfEmpty([]),
+        );
+
+        const selectedSnappedPath2 = combineLatest(
+            selectedOriginalPath2$,
+            this.selectedSnapType$
+        ).pipe(
+            mergeMap(([route, snapType]) => this.snapRoute(route, snapType)),
+            defaultIfEmpty([]),
+        );
 
         combineLatest(
-            this._selectedPath1,
-            this._selectedPath2,
-            this._maxDistance,
-            this._selectedCompareType,
+            selectedSnappedPath1,
+            this.simplifyEpsilon$.pipe(distinctUntilChanged()),
+        ).pipe(
+            map(([route, epsilon]) => this.simplifyService.simplify(route, epsilon)),
+            map(r => r.simplifiedPath),
+            defaultIfEmpty([])
+        ).subscribe(this.selectedPath1$);
+
+        combineLatest(
+            selectedSnappedPath2,
+            this.simplifyEpsilon$.pipe(distinctUntilChanged()),
+        ).pipe(
+            map(([route, epsilon]) => this.simplifyService.simplify(route, epsilon)),
+            map(r => r.simplifiedPath),
+            defaultIfEmpty([]),
+        ).subscribe(this.selectedPath2$);
+
+        combineLatest(
+            this.selectedActivity1$.pipe(filter(a => !!a)),
+            this.selectedQuality$.pipe(distinctUntilChanged()),
+        ).pipe(
+            mergeMap(([activity, quality]) => this.getVelocity(activity, quality)),
+        ).subscribe(this.selectedVelocity1$);
+
+        combineLatest(
+            this.selectedActivity2$.pipe(filter(a => !!a)),
+            this.selectedQuality$.pipe(distinctUntilChanged()),
+        ).pipe(
+            mergeMap(([activity, quality]) => this.getVelocity(activity, quality)),
+        ).subscribe(this.selectedVelocity2$);
+
+        combineLatest(
+            this.selectedPath1$.pipe(filter(p => !!p)),
+            this.selectedPath2$.pipe(filter(p => !!p)),
+            this.maxDistance$.pipe(distinctUntilChanged()),
+            this.selectedCompareType$.pipe(distinctUntilChanged()),
         ).pipe(
             map(([path1, path2, maxDistance, compareType]) => {
                 switch (compareType) {
@@ -143,16 +147,14 @@ export class CompareRoutesComponent implements OnInit {
                     case 'points-lines-2':
                         return this.compareRoutesService.comparePointsWithLines2(path1, path2, maxDistance);
                 }
-            })
-        ).subscribe(this._compareResult);
+            }),
+            filter(cr => !!cr),
+        ).subscribe(this.compareResult$);
 
-        this._overlappingPaths = combineLatest(
-            this._compareResult.pipe(
-                filter(cr => !!cr),
-                map(r => r.overlappingPaths),
-            ),
-            this._selectedPath1,
-            this._selectedPath2,
+        this.overlappingPaths$ = combineLatest(
+            this.compareResult$.pipe(filter(cr => !!cr), map(r => r.overlappingPaths)),
+            this.selectedPath1$.pipe(filter(p => !!p)),
+            this.selectedPath2$.pipe(filter(p => !!p)),
         ).pipe(
             map(
                 ([result, path1, path2]) => result.map((r): [Position[], Position[]] => ([
@@ -163,10 +165,10 @@ export class CompareRoutesComponent implements OnInit {
             map(paths => paths.filter(pair => pair[0].length >= 2 && pair[1].length >= 2))
         );
 
-        this._routes = combineLatest(
-            this._selectedPath1,
-            this._selectedPath2,
-            this._overlappingPaths.pipe(defaultIfEmpty([]))
+        this.routes$ = combineLatest(
+            this.selectedPath1$,
+            this.selectedPath2$,
+            this.overlappingPaths$.pipe(defaultIfEmpty([]))
         ).pipe(
             map(([selectedPath1, selectedPath2, overlappingPaths]) => {
                 const routes: MapRoute[] = [
@@ -180,28 +182,31 @@ export class CompareRoutesComponent implements OnInit {
             })
         );
 
-        this._totalDistance = combineLatest(this._selectedPath1, this._selectedPath2)
-            .pipe(
-                map(([path1, path2]) => [lineString(path1), lineString(path2)]),
-                map(([path1, path2]) => length(path1) + length(path2))
-            );
-
-        this._overlappingDistance = this._overlappingPaths
-            .pipe(
-                map(paths => paths.map(pair => [lineString(pair[0]), lineString(pair[1])])),
-                map(paths => paths.map(pair => length(pair[0]) + length(pair[1]))),
-                map(paths => paths.reduce((a, b) => a + b, 0))
-            );
-
-        this._overlappingPercentage = combineLatest(
-            this._totalDistance,
-            this._overlappingDistance
+        combineLatest(
+            this.compareResult$,
+            this.overlappingPaths$.pipe(filter(p => !!p)),
+            this.selectedPath1$.pipe(filter(p => !!p)),
+            this.selectedPath2$.pipe(filter(p => !!p)),
         ).pipe(
-            map(([total, overlapping]) => overlapping / total)
-        );
+            debounceTime(250),
+        ).subscribe(([cr, op, sp1, sp2]) => {
+            const totalDistance = length(lineString(sp1)) + length(lineString(sp2));
+            const overlappingDistance = op.map(pair => length(lineString(pair[0])) + length(lineString(pair[1]))).reduce((a, b) => a + b, 0);
+
+            console.group();
+            console.log('Total Distance', totalDistance);
+            console.log('Overlapping Distance', overlappingDistance);
+            console.log('Overlapping Percentage', overlappingDistance / totalDistance);
+
+            console.log('Points Path 1', sp1.length);
+            console.log('Points Path 2', sp2.length);
+
+            console.log('Calculation Time', cr.calculationTime, 'ms');
+            console.groupEnd();
+        });
     }
 
-    private convertRoute(route: Position[], snapType: string): Promise<Position[]> {
+    private snapRoute(route: Position[], snapType: string): Promise<Position[]> {
         switch (snapType) {
             case 'google-maps':
                 return this.snapToRoadService.snapGoogleMaps(route);
@@ -215,6 +220,32 @@ export class CompareRoutesComponent implements OnInit {
             default:
                 return Promise.resolve(route);
         }
+    }
+
+    private getRoute(activity: DetailedActivity, quality: string): Observable<Position[]> {
+        return this.firestore
+            .collection('athletes').doc(String(activity.athlete.id))
+            .collection('activities').doc(String(activity.id))
+            .collection('latlng').doc<LatLngStream>(quality)
+            .valueChanges()
+            .pipe(
+                filter(o => !!o),
+                map(o => o.data.map((coord: any): Position => [coord.lng, coord.lat])),
+                defaultIfEmpty([]),
+        );
+    }
+
+    private getVelocity(activity: DetailedActivity, quality: string): Observable<number[]> {
+        return this.firestore
+            .collection('athletes').doc(String(activity.athlete.id))
+            .collection('activities').doc(String(activity.id))
+            .collection('velocity_smooth').doc<SmoothVelocityStream>(quality)
+            .valueChanges()
+            .pipe(
+                filter(o => !!o),
+                map(o => o.data),
+                defaultIfEmpty([]),
+        );
     }
 
     public async ngOnInit(): Promise<void> {
@@ -241,7 +272,7 @@ export class CompareRoutesComponent implements OnInit {
     }
 
     public set selectedActivity1(activity: DetailedActivity) {
-        this._selectedActivity1.next(activity);
+        this.selectedActivity1$.next(activity);
         this.router.navigate([], {
             queryParams: {
                 ...this.route.snapshot.queryParams,
@@ -251,11 +282,11 @@ export class CompareRoutesComponent implements OnInit {
     }
 
     public get selectedActivity1(): DetailedActivity {
-        return this._selectedActivity1.value;
+        return this.selectedActivity1$.value;
     }
 
     public set selectedActivity2(activity: DetailedActivity) {
-        this._selectedActivity2.next(activity);
+        this.selectedActivity2$.next(activity);
         this.router.navigate([], {
             queryParams: {
                 ...this.route.snapshot.queryParams,
@@ -265,58 +296,58 @@ export class CompareRoutesComponent implements OnInit {
     }
 
     public get selectedActivity2(): DetailedActivity {
-        return this._selectedActivity2.value;
+        return this.selectedActivity2$.value;
     }
 
     public set selectedQuality(quality: QualityType) {
-        this._selectedQuality.next(quality);
+        this.selectedQuality$.next(quality);
     }
 
     public get selectedQuality(): QualityType {
-        return this._selectedQuality.value;
+        return this.selectedQuality$.value;
     }
 
     public set selectedSnapType(snapType: string) {
-        this._selectedSnapType.next(snapType);
+        this.selectedSnapType$.next(snapType);
     }
 
     public get selectedSnapType(): string {
-        return this._selectedSnapType.value;
+        return this.selectedSnapType$.value;
     }
 
     public set selectedCompareType(compareType: string) {
-        this._selectedCompareType.next(compareType);
+        this.selectedCompareType$.next(compareType);
     }
 
     public get selectedCompareType(): string {
-        return this._selectedCompareType.value;
+        return this.selectedCompareType$.value;
     }
 
     public get routes(): Observable<MapRoute[]> {
-        return this._routes;
+        return this.routes$;
     }
 
     public get maxDistance(): number {
-        return this._maxDistance.value;
+        return this.maxDistance$.value;
     }
 
     public set maxDistance(d: number) {
-        this._maxDistance.next(d);
-    }
-
-    public get compareResult(): Observable<CompareResult> {
-        return this._compareResult;
-    }
-
-    public get overlappingPercentage(): Observable<number> {
-        return this._overlappingPercentage;
+        this.maxDistance$.next(d);
     }
 
     public set chartOverlappingId(id: number) {
-        this._chartOverlappingId.next(id);
+        this.chartOverlappingId$.next(id);
     }
 
     public get chartOverlappingId(): number {
-        return this._chartOverlappingId.getValue();
+        return this.chartOverlappingId$.getValue();
+    }
+
+    public get simplifyEpsilon(): number {
+        return this.simplifyEpsilon$.value;
+    }
+
+    public set simplifyEpsilon(d: number) {
+        this.simplifyEpsilon$.next(d);
     }
 }
