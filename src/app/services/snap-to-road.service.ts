@@ -14,7 +14,7 @@ export class SnapToRoadService {
     public async snapGoogleMaps(route: Position[], interpolate: boolean = false): Promise<Position[]> {
         const snappedRoute: Position[] = [];
 
-        for (let startIndex = 0; startIndex <= route.length - 1; startIndex += 100) {
+        for (let startIndex = 0; startIndex < route.length; startIndex += 100) {
             const path = route.slice(startIndex, startIndex + 100).map(p => `${p[1]},${p[0]}`).join('|');
             const response: any = await this.httpClient.get(`https://roads.googleapis.com/v1/snapToRoads?path=${path}&interpolate=${String(interpolate)}&key=${environment.googleMaps.key}`).toPromise();
 
@@ -32,11 +32,22 @@ export class SnapToRoadService {
     }
 
     public async snapMapbox(route: Position[], simplified: boolean = true): Promise<Position[]> {
-        const path = route.slice(0, 100).map(p => p.join(',')).join(';');
-        const response: any = await this.httpClient.get(`https://api.mapbox.com/matching/v5/mapbox/walking/${path}?access_token=${environment.mapbox.accessToken}&overview=${simplified ? 'simplified' : 'full'}`).toPromise();
+        const snappedRoute: Position[] = [];
 
-        return response.tracepoints
-            .filter(p => !!p)
-            .map(p => p.location);
+        for (let startIndex = 0; startIndex < route.length; startIndex += 100) {
+            console.log('Snapping route', Math.min(100, Math.round((startIndex + 100) / route.length * 100)));
+
+            const path = route.slice(startIndex, startIndex + 100).map(p => p.join(',')).join(';');
+            const response: any = await this.httpClient.get(`https://api.mapbox.com/matching/v5/mapbox/walking/${path}?access_token=${environment.mapbox.accessToken}&overview=${simplified ? 'simplified' : 'full'}`).toPromise();
+
+            if (response.tracepoints) {
+                snappedRoute.push.apply(
+                    snappedRoute,
+                    response.tracepoints.filter(p => !!p).map(p => p.location),
+                );
+            }
+        }
+
+        return snappedRoute;
     }
 }
