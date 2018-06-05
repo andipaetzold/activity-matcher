@@ -193,7 +193,7 @@ export class CompareRoutesService {
             const front1 = () => path1[pathIndex1 + 1];
             const line1 = () => lineString([back1(), front1()]);
 
-            for (let pathIndex2 = 0; pathIndex2 < path2.length - 1; ++pathIndex2) {
+            for (let pathIndex2 = 0; pathIndex1 < path1.length - 1 && pathIndex2 < path2.length - 1; ++pathIndex2) {
                 const back2 = () => path2[pathIndex2];
                 const front2 = () => path2[pathIndex2 + 1];
                 const line2 = () => lineString([back2(), front2()]);
