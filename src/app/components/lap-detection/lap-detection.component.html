@@ -37,13 +37,7 @@
         <mat-form-field>
             <input matInput type="number" placeholder="Min length (in m)" [(ngModel)]="minLength" min="10" step="10">
         </mat-form-field>
-
-        <mat-form-field>
-            <input matInput type="number" placeholder="Selected potential lap" [(ngModel)]="selectedPotentialLap" step="1">
-        </mat-form-field>
     </mat-card-content>
-
-    <br> Potential Laps: {{ (potentialLaps$ | async)?.length }}
 </mat-card>
 
 <app-map [routes]="routes | async"></app-map>

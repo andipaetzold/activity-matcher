@@ -29,10 +29,6 @@ export class LapDetectionComponent implements OnInit {
     private maxDistance$: BehaviorSubject<number> = new BehaviorSubject<number>(10);
     private minLength$: BehaviorSubject<number> = new BehaviorSubject<number>(200);
 
-    public potentialLaps$: BehaviorSubject<Lap[]> = new BehaviorSubject<Lap[]>([]);
-    private selectedPotentialLap$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
-    private displayedPotentialLap$: BehaviorSubject<Position[]> = new BehaviorSubject<Position[]>([]);
-
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
         private readonly httpClient: HttpClient,
@@ -77,39 +73,13 @@ export class LapDetectionComponent implements OnInit {
         combineLatest(
             this.selectedPath$,
             this.maxDistance$,
-            this.minLength$
-        ).pipe(
-            map(([path, maxDistance, minLength]) => this.lapDetectionService.findLaps(path, maxDistance, minLength))
-        ).subscribe(this.potentialLaps$);
+            this.minLength$,
+        ).subscribe(([path, maxDistance, minLength]) => this.lapDetectionService.runLapDetection(path, maxDistance, minLength));
 
-        combineLatest(
-            this.potentialLaps$,
-            this.selectedPotentialLap$
-        ).pipe(
-            map(([potentialLaps, selectedPotentialLap]) => potentialLaps[selectedPotentialLap]),
-            filter(lap => !!lap),
-            withLatestFrom(this.selectedPath$),
-            map(([potentialLap, path]) => [...path.slice(potentialLap.from, potentialLap.to), path[potentialLap.from]])
-        ).subscribe(this.displayedPotentialLap$);
-
-        this.routes$ = combineLatest(
-            this.selectedPath$,
-            this.displayedPotentialLap$
-        ).pipe(
-            map(([path, potentialLap]) => [
-                { path },
-                { path: potentialLap, color: 'blue', width: 2 }
-            ])
-        );
-
-        combineLatest(
-            this.selectedPath$,
-            this.potentialLaps$,
-            this.maxDistance$,
-        ).pipe(
-            map(([path, potentialLaps, maxDistance]) => potentialLaps.map(potentialLap => this.lapDetectionService.countLaps(path, potentialLap.from, potentialLap.to, maxDistance))),
-            map(laps => this.lapDetectionService.filterLaps(laps))
-        ).subscribe(console.log);
+        this.routes$ = this.selectedPath$
+            .pipe(
+                map(path => [{ path }])
+            );
     }
 
     public async ngOnInit(): Promise<void> {
@@ -175,14 +145,6 @@ export class LapDetectionComponent implements OnInit {
 
     public set minLength(d: number) {
         this.minLength$.next(d);
-    }
-
-    public get selectedPotentialLap(): number {
-        return this.selectedPotentialLap$.value;
-    }
-
-    public set selectedPotentialLap(d: number) {
-        this.selectedPotentialLap$.next(d);
     }
 
     public get routes(): Observable<MapRoute[]> {

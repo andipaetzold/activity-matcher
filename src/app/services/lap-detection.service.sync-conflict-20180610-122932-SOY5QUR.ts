@@ -24,14 +24,9 @@ export class LapDetectionService {
     }
 
     public runLapDetection(path: Position[], maxDistance: number, minLength: number): void {
-        console.time('runLapDetection');
-
         const potentialLaps = this.findLaps(path, maxDistance, minLength);
-        let laps = potentialLaps.map(potentialLap => this.countLaps(path, potentialLap.from, potentialLap.to, maxDistance))
-        laps = this.filterLaps(laps);
-
-        console.timeEnd('runLapDetection');
-        console.log(laps);
+        const laps = potentialLaps.map(potentialLap => this.countLaps(path, potentialLap.from, potentialLap.to, maxDistance))
+        console.log(this.filterLaps(laps));
     }
 
     public findLaps(path: Position[], maxDistance: number, minLength: number): Lap[] {
