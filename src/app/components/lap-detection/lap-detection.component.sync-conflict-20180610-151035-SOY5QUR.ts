@@ -9,9 +9,8 @@ import { Position } from 'geojson';
 import { MapRoute } from '../../domain/MapRoute';
 import { Router, ActivatedRoute } from '@angular/router';
 import { LapDetectionService, Lap } from '../../services/lap-detection.service';
-import { BehaviorSubject, Observable, combineLatest, of, Subject } from 'rxjs';
-import { filter, mergeMap, map, defaultIfEmpty, first, withLatestFrom, distinctUntilChanged } from 'rxjs/operators';
-import { SimplifyService } from 'app/services/simplify.service';
+import { BehaviorSubject, Observable, combineLatest, of } from 'rxjs';
+import { filter, mergeMap, map, defaultIfEmpty, first, withLatestFrom } from 'rxjs/operators';
 
 type QualityType = 'low' | 'medium' | 'high';
 
@@ -23,13 +22,12 @@ export class LapDetectionComponent implements OnInit {
     public activities: DetailedActivity[] = [];
 
     private selectedActivity$: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
-    private selectedPath$: Subject<Position[]> = new BehaviorSubject<Position[]>([]);
-    private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('high');
+    private selectedPath$: Observable<Position[]>;
+    private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
     private selectedSnapType$: BehaviorSubject<string> = new BehaviorSubject<string>('none');
     private routes$: Observable<MapRoute[]>;
     private maxDistance$: BehaviorSubject<number> = new BehaviorSubject<number>(10);
     private minLength$: BehaviorSubject<number> = new BehaviorSubject<number>(200);
-    private simplifyEpsilon$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
 
     public constructor(
         private readonly stravaAuthService: StravaAuthService,
@@ -40,10 +38,9 @@ export class LapDetectionComponent implements OnInit {
         private readonly router: Router,
         private readonly route: ActivatedRoute,
         private readonly lapDetectionService: LapDetectionService,
-        private readonly simplifyService: SimplifyService,
     ) {
 
-        const selectedOriginalPath$ =
+        this.selectedPath$ =
             combineLatest(
                 this.selectedActivity$.pipe(filter(a => !!a)),
                 this.selectedQuality$,
@@ -54,40 +51,24 @@ export class LapDetectionComponent implements OnInit {
                     .collection('latlng').doc(quality).valueChanges()),
                 filter(o => !!o),
                 map(o => (<any>o).data.map((coord: any): Position => [coord.lng, coord.lat])),
+                withLatestFrom(this.selectedSnapType$),
+                mergeMap(([route, snapType]) => {
+                    switch (snapType) {
+                        case 'google-maps':
+                            return this.snapToRoadService.snapGoogleMaps(route);
+                        case 'google-maps-interpolate':
+                            return this.snapToRoadService.snapGoogleMaps(route, true);
+                        case 'mapbox':
+                            return this.snapToRoadService.snapMapbox(route, true);
+                        case 'mapbox-full':
+                            return this.snapToRoadService.snapMapbox(route, false);
+                        case 'none':
+                        default:
+                            return of(route);
+                    }
+                }),
                 defaultIfEmpty([])
             );
-
-        const selectedSnappedPath$ = combineLatest(
-            selectedOriginalPath$,
-            this.selectedSnapType$,
-        ).pipe(
-            mergeMap(([route, snapType]) => {
-                switch (snapType) {
-                    case 'google-maps':
-                        return this.snapToRoadService.snapGoogleMaps(route);
-                    case 'google-maps-interpolate':
-                        return this.snapToRoadService.snapGoogleMaps(route, true);
-                    case 'mapbox':
-                        return this.snapToRoadService.snapMapbox(route, true);
-                    case 'mapbox-full':
-                        return this.snapToRoadService.snapMapbox(route, false);
-                    case 'none':
-                    default:
-                        return of(route);
-                }
-            }),
-            defaultIfEmpty([])
-        );
-
-
-        combineLatest(
-            selectedSnappedPath$,
-            this.simplifyEpsilon$.pipe(distinctUntilChanged()),
-        ).pipe(
-            map(([route, epsilon]) => this.simplifyService.simplify(route, epsilon)),
-            map(r => r.simplifiedPath),
-            defaultIfEmpty([])
-        ).subscribe(this.selectedPath$);
 
         combineLatest(
             this.selectedPath$,
@@ -95,7 +76,10 @@ export class LapDetectionComponent implements OnInit {
             this.minLength$,
         ).subscribe(([path, maxDistance, minLength]) => this.lapDetectionService.runLapDetection(path, maxDistance, minLength));
 
-        this.routes$ = this.selectedPath$.pipe(map(path => [{ path }]));
+        this.routes$ = this.selectedPath$
+            .pipe(
+                map(path => [{ path }])
+            );
     }
 
     public async ngOnInit(): Promise<void> {
@@ -165,13 +149,5 @@ export class LapDetectionComponent implements OnInit {
 
     public get routes(): Observable<MapRoute[]> {
         return this.routes$;
-    }
-
-    public get simplifyEpsilon(): number {
-        return this.simplifyEpsilon$.value;
-    }
-
-    public set simplifyEpsilon(d: number) {
-        this.simplifyEpsilon$.next(d);
     }
 }

@@ -21,6 +21,10 @@
         </mat-form-field>
 
         <mat-form-field>
+            <input matInput type="number" placeholder="Simplify Epsilon" [(ngModel)]="simplifyEpsilon" min="0" max="100" step="1">
+        </mat-form-field>
+
+        <mat-form-field>
             <mat-select placeholder="Selected snap type" [(value)]="selectedSnapType">
                 <mat-option [value]="'none'">None</mat-option>
                 <mat-option [value]="'google-maps'">Google Maps</mat-option>
