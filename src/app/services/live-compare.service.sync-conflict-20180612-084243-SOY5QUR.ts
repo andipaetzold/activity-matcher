@@ -55,7 +55,7 @@ export class LiveCompareService {
     }
 
     public addPoint(positionLive: Position): OverlappingPath {
-        const start = performance.now();
+        const start = Date.now();
 
         let result: OverlappingPath;
 
@@ -149,12 +149,11 @@ export class LiveCompareService {
         ++this.pathIndex1;
         this.prevLive = positionLive;
 
-        const end = performance.now();
+        const end = Date.now();
 
         this.totalTime += end - start;
-        console.group(String(this.pathIndex1));
+        console.group();
         console.log('Total', this.totalTime);
-        console.log('This point', end - start);
         console.log('Avg', this.totalTime / this.pathIndex1);
         console.groupEnd();
 

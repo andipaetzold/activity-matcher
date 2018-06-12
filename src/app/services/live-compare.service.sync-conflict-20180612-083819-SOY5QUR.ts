@@ -33,8 +33,6 @@ export class LiveCompareService {
     private prevLive: Position = null;
     private overlappingPath: OverlappingPath = null;
 
-    private totalTime: number = 0;
-
     public reset(path: Position[], maxDistance: number): void {
         this.maxDistance = maxDistance;
         this.path2 = path;
@@ -43,8 +41,6 @@ export class LiveCompareService {
 
         this.pathIndex1 = 0;
         this.pathIndex2 = 0;
-
-        this.totalTime = 0;
     }
 
     private resetOverlappingPath(): void {
@@ -55,8 +51,6 @@ export class LiveCompareService {
     }
 
     public addPoint(positionLive: Position): OverlappingPath {
-        const start = performance.now();
-
         let result: OverlappingPath;
 
         if (this.pathIndex1 >= 1) {
@@ -148,15 +142,6 @@ export class LiveCompareService {
 
         ++this.pathIndex1;
         this.prevLive = positionLive;
-
-        const end = performance.now();
-
-        this.totalTime += end - start;
-        console.group(String(this.pathIndex1));
-        console.log('Total', this.totalTime);
-        console.log('This point', end - start);
-        console.log('Avg', this.totalTime / this.pathIndex1);
-        console.groupEnd();
 
         return result;
     }

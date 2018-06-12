@@ -32,7 +32,7 @@ export class LiveCompareComponent {
     private livePathPointId: BehaviorSubject<number> = new BehaviorSubject<number>(0);
     private liveSelectedPath2$: Observable<Position[]> = combineLatest(this.selectedPath2$, this.livePathPointId).pipe(map(([path, id]) => path.slice(0, id)));
 
-    private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
+    private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('high');
     private routes$: Observable<MapRoute[]>;
 
     private overlappingPathsResult$: BehaviorSubject<OverlappingPath[]> = new BehaviorSubject<OverlappingPath[]>([]);
@@ -198,6 +198,12 @@ export class LiveCompareComponent {
             }
 
             this.livePathPointId.next(this.livePathPointId.getValue() + 1);
+        }
+    }
+
+    public startActivity(): void {
+        while (this.selectedPath1$.getValue()[this.livePathPointId.getValue()]) {
+            this.nextLivePathPoint();
         }
     }
 }
