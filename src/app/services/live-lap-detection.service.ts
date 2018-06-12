@@ -79,18 +79,21 @@ export class LiveLapDetectionService {
 
             for (let lapStartIndex = lap.cur; lapStartIndex < this.path.length; ++lapStartIndex) {
                 while (lapStartIndex < this.path.length) {
-                    const points = this.compare(this.path.slice(lapStartIndex - 1), lapPath, this.maxDistance);
-                    if (!points) {
+                    const compareResult = this.compare(this.path.slice(lapStartIndex - 1), lapPath, this.maxDistance);
+                    if (compareResult === -1) {
+                        ++lap.cur;
                         break;
+                    } else if (compareResult === 0) {
+                        break;
+                    } else {
+                        lap.occurences.push({
+                            from: lapStartIndex,
+                            to: lapStartIndex + compareResult,
+                        });
+
+                        lapStartIndex += compareResult;
+                        lap.cur = lapStartIndex;
                     }
-
-                    lap.occurences.push({
-                        from: lapStartIndex,
-                        to: lapStartIndex + points,
-                    });
-
-                    lapStartIndex += points;
-                    lap.cur = lapStartIndex;
                 }
             }
 
@@ -156,7 +159,7 @@ export class LiveLapDetectionService {
         let distanceToLine2 = distance(back1(), pointOnLine2, distanceOptions);
 
         if (Math.min(distanceToLine1, distanceToLine2) > maxDistance) {
-            return 0;
+            return -1;
         }
 
         while (pathIndex1 < path.length - 1 && pathIndex2 < lap.length - 1) {
@@ -167,7 +170,7 @@ export class LiveLapDetectionService {
             distanceToLine2 = distance(front1(), pointOnLine2, distanceOptions);
 
             if (Math.min(distanceToLine1, distanceToLine2) > maxDistance) {
-                return 0;
+                return -1;
             }
 
             if (distanceToLine1 < distanceToLine2) {
