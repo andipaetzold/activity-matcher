@@ -24,7 +24,7 @@ export class LiveLapDetectionComponent implements OnInit {
 
     private selectedActivity$: BehaviorSubject<DetailedActivity> = new BehaviorSubject<DetailedActivity>(undefined);
     private selectedPath$: BehaviorSubject<Position[]> = new BehaviorSubject<Position[]>(null);
-    private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('low');
+    private selectedQuality$: BehaviorSubject<QualityType> = new BehaviorSubject<QualityType>('high');
     private pathPointId$: BehaviorSubject<number> = new BehaviorSubject<number>(0);
     private liveSelectedPath$: Observable<Position[]> = combineLatest(
         this.selectedPath$,
@@ -145,6 +145,13 @@ export class LiveLapDetectionComponent implements OnInit {
             this.liveLapDetectionService.addPoint(position);
 
             this.pathPointId$.next(this.pathPointId$.getValue() + 1);
+        }
+    }
+
+    public startActivity(): void {
+        console.log(this.pathPointId$);
+        while (this.selectedPath$.getValue()[this.pathPointId$.getValue()]) {
+            this.nextPathPoint();
         }
     }
 }

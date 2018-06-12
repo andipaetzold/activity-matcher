@@ -15,12 +15,12 @@ export interface Lap {
     to: number;
 
     cur: number;
-    occurences: LapOccurence[],
-}
-
-interface LapOccurence {
-    from: number;
-    to: number;
+    occurences: [
+        {
+            from: number;
+            to: number;
+        }
+    ],
 }
 
 @Injectable()
@@ -41,15 +41,12 @@ export class LiveLapDetectionService {
     }
 
     public addPoint(position: Position): void {
-        console.group(String(this.path.length + 1));
+        console.group();
         this.path.push(position);
 
-        const lapStopIndex = this.path.length - 2;
-
-        const stopLine = lineString([this.path[lapStopIndex], this.path[lapStopIndex + 1]]);
-
+        const stopLine = lineString([this.path[this.path.length - 2], this.path[this.path.length - 1]]);
         let lapDistance = 0;
-        for (let lapStartIndex = lapStopIndex - 1; lapStartIndex >= this.smallestStartIndex; --lapStartIndex) {
+        for (let lapStartIndex = this.path.length - 2; lapStartIndex >= this.smallestStartIndex; --lapStartIndex) {
             lapDistance += distance(this.path[lapStartIndex], this.path[lapStartIndex + 1], distanceOptions);
 
             if (lapDistance < this.minLength) {
@@ -57,13 +54,19 @@ export class LiveLapDetectionService {
             }
 
             if (distancePointToLine(this.path[lapStartIndex], stopLine, distanceOptions) <= this.maxDistance) {
-                this.smallestStartIndex = lapStopIndex;
+                this.smallestStartIndex = this.path.length;
                 this.laps.push({
                     from: lapStartIndex,
-                    to: lapStopIndex,
+                    to: this.path.length - 1,
                     cur: 0,
-                    occurences: []
+                    occurences: [
+                        {
+                            from: lapStartIndex,
+                            to: this.path.length - 1,
+                        }
+                    ]
                 });
+                console.log("lap found")
                 break;
             }
         }
@@ -72,7 +75,7 @@ export class LiveLapDetectionService {
         for (const lap of this.laps) {
             const lapPath = this.path.slice(lap.from, lap.to + 1);
 
-            for (let lapStartIndex = lap.cur; lapStartIndex < this.path.length; ++lapStartIndex) {
+            for (let lapStartIndex = lap.occurences[lap.occurences.length - 1].to; lapStartIndex < this.path.length; ++lapStartIndex) {
                 while (lapStartIndex < this.path.length) {
                     const points = this.compare(this.path.slice(lapStartIndex - 1), lapPath, this.maxDistance);
                     if (!points) {
@@ -85,39 +88,16 @@ export class LiveLapDetectionService {
                     });
 
                     lapStartIndex += points;
-                    lap.cur = lapStartIndex;
+
+                    console.log('new lap done');
+                    break;
                 }
             }
-
         }
 
-        //// FILTER
-        const result = this.laps.filter((curLaps, index) => {
-            for (const lapIndex in this.laps) {
-                const lap = this.laps[lapIndex];
+        //// Remove overlapping potential laps
 
-                if (+lapIndex === index) {
-                    continue;
-                }
-
-                for (const l1 of lap.occurences) {
-                    for (const l2 of curLaps.occurences) {
-                        if ((l1.from >= l2.from && l1.from <= l2.to) ||
-                            (l1.to >= l2.from && l1.to <= l2.to) ||
-                            (l1.from <= l2.from && l1.to >= l2.to)) {
-                            if (curLaps.occurences.length < lap.occurences.length ||
-                                (curLaps.occurences.length === lap.occurences.length && index > +lapIndex)) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-            return true;
-        });
-
-        console.log(result);
-
+        console.log(this.laps);
         console.groupEnd();
     }
 
