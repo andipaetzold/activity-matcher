@@ -32,16 +32,21 @@ export class LiveLapDetectionService {
     private smallestStartIndex: number;
     private laps: Lap[];
 
+    private totalTime: number = 0;
+
     public reset(maxDistance: number, minLength: number) {
         this.maxDistance = maxDistance;
         this.minLength = minLength;
         this.smallestStartIndex = 0;
         this.path = [];
         this.laps = [];
+
+        this.totalTime = 0;
     }
 
     public addPoint(position: Position): void {
-        console.group(String(this.path.length + 1));
+        const start = performance.now();
+
         this.path.push(position);
 
         const lapStopIndex = this.path.length - 2;
@@ -116,7 +121,14 @@ export class LiveLapDetectionService {
             return true;
         });
 
-        console.log(result);
+        const end = performance.now();
+
+        this.totalTime += end - start;
+        console.group(String(this.path.length));
+        console.log('Total', this.totalTime);
+        console.log('This point', end - start);
+        console.log('Avg', this.totalTime / this.path.length);
+        console.groupEnd();
 
         console.groupEnd();
     }
