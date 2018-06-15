@@ -190,13 +190,13 @@ export class CompareRoutesComponent implements OnInit {
         ).pipe(
             debounceTime(250),
         ).subscribe(([cr, op, sp1, sp2]) => {
-            const totalDistance = length(lineString(sp1)) + length(lineString(sp2));
-            const overlappingDistance = op.map(pair => length(lineString(pair[0])) + length(lineString(pair[1]))).reduce((a, b) => a + b, 0);
+            const distance = length(lineString(sp1));
+            const overlappingDistance = op.map(pair => length(lineString(pair[0]))).reduce((a, b) => a + b, 0);
 
             console.group();
-            console.log('Total Distance', totalDistance);
+            console.log('Distance', distance);
             console.log('Overlapping Distance', overlappingDistance);
-            console.log('Overlapping Percentage', overlappingDistance / totalDistance);
+            console.log('Overlapping Percentage', overlappingDistance / distance);
 
             console.log('Points Path 1', sp1.length);
             console.log('Points Path 2', sp2.length);
